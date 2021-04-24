@@ -10,6 +10,8 @@ import requests
 
 import yank.constants as _c
 
+from yank.target import Target
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PLIERS                                                                             │
@@ -44,3 +46,32 @@ class Pliers:
 
             # Set requester to a new requests session
             self.requester = requests.Session()
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ REQUEST                                                                        │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def request(self, url, method):
+        """ Performs an HTTP request on a Target object using the pliers' requester """
+
+        # Initialize target object from URL
+        target = Target(url=url, pliers=self)
+
+        # Handle case of GET
+        if method == _c.GET:
+
+            # Call GET method on target
+            target.get()
+
+        # Return target
+        return target
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET                                                                            │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def get(self, url):
+        """ Performs an HTTP GET request using the pliers' requester """
+
+        # Make GET request and return target
+        return self.request(url, method=_c.GET)
