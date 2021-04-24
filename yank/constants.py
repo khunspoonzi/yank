@@ -1,0 +1,2 @@
+SESSION = "session"
+TRANSIENT = "transient"
