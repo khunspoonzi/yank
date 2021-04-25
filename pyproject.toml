@@ -9,6 +9,7 @@ license = "MIT"
 python = "^3.6"
 requests = "^2.25.1"
 selenium = "^3.141.0"
+webdriver-manager = "^3.4.0"
 
 [tool.poetry.dev-dependencies]
 

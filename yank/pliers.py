@@ -47,6 +47,9 @@ class Pliers:
             # Set requester to a new requests session
             self.requester = requests.Session()
 
+        # Set driver
+        self.driver = yanker.driver
+
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ REQUEST                                                                        │
     # └────────────────────────────────────────────────────────────────────────────────┘

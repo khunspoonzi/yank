@@ -1,4 +1,6 @@
 CHROME = "chrome"
+CHROMIUM = "chromium"
+FIREFOX = "firefox"
 GET = "get"
 SESSION = "session"
 TRANSIENT = "transient"

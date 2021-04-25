@@ -34,10 +34,14 @@ class Target:
         """ Performs an HTTP GET request to the page using its pliers' requester """
 
         # Get response
-        response = self.pliers.requester.get(self.url)
+        # response = self.pliers.requester.get(self.url)
+
+        self.pliers.driver.get(self.url)
+
+        int("haha")
 
         # Set response
-        self.response = response
+        # self.response = response
 
         # Return response
-        return response
+        # return response
