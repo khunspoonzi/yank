@@ -10,9 +10,29 @@ import copy
 
 import yank.constants as _c
 
-from yank.exceptions import UnsupportedBrowserError
+from yank.browser import Browser
 from yank.pliers import Pliers
-from yank.tools import initialize_driver
+
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ CONSTANTS                                                                          │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+
+def constants(cls):
+    """
+    Dynamically applies selected constants from other utility classes, so that users
+    don't have to import import those utility classes to access their constants
+    """
+
+    # Iterate over supported browsers
+    for browser_slug in Browser.supported_browsers:
+
+        # Set browser constant as class attribute
+        setattr(cls, browser_slug.upper(), browser_slug)
+
+    # Return the class
+    return cls
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -20,6 +40,7 @@ from yank.tools import initialize_driver
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 
+@constants
 class Yanker:
     """ A base class for custom Yanker classes """
 
@@ -30,18 +51,6 @@ class Yanker:
     # Modes
     SESSION = _c.SESSION
     TRANSIENT = _c.TRANSIENT
-
-    # Browsers
-    CHROME = _c.CHROME
-    CHROMIUM = _c.CHROMIUM
-    FIREFOX = _c.FIREFOX
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CLASS ATTRIBUTES                                                               │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    # Define supported browsers
-    supported_browsers = (CHROME, CHROMIUM, FIREFOX)
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CUSTOMIZABLE CLASS ATTRIBUTES                                                  │
@@ -59,8 +68,8 @@ class Yanker:
     # Initialize default headers to None
     default_headers = None
 
-    # Initialize browser
-    browser = CHROME
+    # Initialize default browser
+    default_browser = Browser.CHROME
 
     # Initialize headless to True
     headless = True
@@ -75,7 +84,7 @@ class Yanker:
         mode="",
         auto_headers=None,
         default_headers=None,
-        browser="",
+        default_browser="",
         headless=None,
     ):
         """ Init Method """
@@ -125,45 +134,23 @@ class Yanker:
         # │ BROWSER AND DRIVER                                                         │
         # └────────────────────────────────────────────────────────────────────────────┘
 
+        # Set browser to None
+        self.browser = None
+
         # Determine if Selenium driver is required
-        driver_is_required = auto_headers
+        driver_is_required = self.auto_headers
 
         # Check if driver is required
         if driver_is_required:
 
-            # Get browser and supported browsers
-            browser = browser or self.browser
-            supported_browsers = self.supported_browsers
-
-            # Check if browser not in supported browsers
-            if self.browser not in supported_browsers:
-
-                # Raise UnsupportedBrowserError
-                raise UnsupportedBrowserError(
-                    f"Browser '{browser}' not supported. Please use one of the "
-                    f"following: {', '.join(list(supported_browsers))}"
-                )
+            # Get default browser and supported browsers
+            default_browser = default_browser or self.default_browser
 
             # Get headless
             headless = headless if headless is not None else self.headless
 
-            # Initialize Selenium webdriver
-            driver = initialize_driver(browser, headless)
-
-        # Otherwise handle case of no browser
-        else:
-
-            # Set browser to empty string
-            browser = ""
-
-            # Initialize driver to None
-            driver = None
-
-        # Set browser
-        self.browser = browser
-
-        # Set driver
-        self.driver = driver
+            # Initialize and set browser
+            self.browser = Browser(default_browser, headless=headless)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ PLIERS                                                                     │
@@ -187,7 +174,7 @@ class Yanker:
         for start_url in self.start_urls:
 
             target = self.pliers.get(start_url)
-            print(target.response)
+            print([t.status_code for t in target.requests])
 
             # Call yank start method on start URL
             # self.yank_start(start_url)
@@ -197,7 +184,7 @@ class Yanker:
         # └────────────────────────────────────────────────────────────────────────────┘
 
         # Get driver
-        driver = self.driver
+        driver = self.browser and self.browser.driver
 
         # Check if driver is not nulle
         if driver:

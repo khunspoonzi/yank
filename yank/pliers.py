@@ -48,7 +48,7 @@ class Pliers:
             self.requester = requests.Session()
 
         # Set driver
-        self.driver = yanker.driver
+        self.driver = yanker.browser and yanker.browser.driver
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ REQUEST                                                                        │
