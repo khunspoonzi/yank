@@ -47,12 +47,12 @@ class Target:
         self.requests = []
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ STATUS CODE                                                                    │
+    # │ REQUEST                                                                        │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     @property
-    def status_code(self):
-        """ Returns the status code of the request that shares the target's URL """
+    def request(self):
+        """ Returns the request that shares the target's URL """
 
         # Get target requests
         target_requests = [r for r in self.requests if r.url == self.url]
@@ -64,8 +64,47 @@ class Target:
         # Get target request
         target_request = target_requests[0]
 
+        # Return target request
+        return target_request
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ RESPONSE                                                                       │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def response(self):
+        """ Returns the response of the target request """
+
+        # Return target request's response
+        return self.request.response
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ STATUS CODE                                                                    │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def status_code(self):
+        """ Returns the status code of the request that shares the target's URL """
+
         # Return target request status code
-        return target_request.status_code
+        return self.target_request.status_code
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ JSON                                                                           │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def json(self):
+        """ Returns a JSON dict of the response object """
+
+        try:
+            # Return JSON data
+            return self.response.json()
+
+        except AttributeError:
+
+            # Return None
+            return None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ GET                                                                            │
