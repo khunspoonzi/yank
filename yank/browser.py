@@ -130,5 +130,19 @@ class Browser:
                 **driver_kwargs,
             )
 
+            # Check if headless is True
+            if headless:
+
+                # Get default user agent
+                user_agent = driver.execute_script("return navigator.userAgent;")
+
+                # Remove indication that user agent is a headless browser
+                user_agent = user_agent.replace("HeadlessChrome", "Chrome")
+
+                # Replace driver user agent
+                driver.execute_cdp_cmd(
+                    "Network.setUserAgentOverride", {"userAgent": user_agent}
+                )
+
         # Return driver
         return driver
