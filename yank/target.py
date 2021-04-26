@@ -47,10 +47,31 @@ class Target:
         self.requests = []
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ STATUS CODE                                                                    │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def status_code(self):
+        """ Returns the status code of the request that shares the target's URL """
+
+        # Get target requests
+        target_requests = [r for r in self.requests if r.url == self.url]
+
+        # Return None if target requests is null
+        if not target_requests:
+            return None
+
+        # Get target request
+        target_request = target_requests[0]
+
+        # Return target request status code
+        return target_request.status_code
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ GET                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get(self):
+    def get(self, driver_callback=None):
         """ Performs an HTTP GET request to the page using its pliers' requester """
 
         # Get URL
@@ -70,7 +91,7 @@ class Target:
         driver = self.driver
 
         # Determine if should use driver
-        should_use_driver = driver and should_get_auto_headers
+        should_use_driver = driver and (driver_callback or should_get_auto_headers)
 
         # Check if driver is not null
         if should_use_driver:
@@ -78,14 +99,23 @@ class Target:
             # Get URL with driver
             driver.get(url)
 
+            # Check if driver callback is not null
+            if driver_callback:
+
+                # Execute driver callback
+                driver_callback(driver)
+
             # Iterate over driver requests
             for request in driver.requests:
 
                 # Get response
                 response = request.response
 
-                # Set request of response
-                response.request = request
+                # Check if response is not None
+                if response is not None:
+
+                    # Set request of response
+                    response.request = request
 
                 # Initialize request object
                 request = Request(url)

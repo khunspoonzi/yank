@@ -54,7 +54,7 @@ class Pliers:
     # │ REQUEST                                                                        │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def request(self, url, method):
+    def request(self, url, method, driver_callback=None):
         """ Performs an HTTP request on a Target object using the pliers' requester """
 
         # Initialize target object from URL
@@ -64,7 +64,7 @@ class Pliers:
         if method == _c.GET:
 
             # Call GET method on target
-            target.get()
+            target.get(driver_callback=driver_callback)
 
         # Return target
         return target
@@ -73,8 +73,8 @@ class Pliers:
     # │ GET                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get(self, url):
+    def get(self, url, driver_callback=None):
         """ Performs an HTTP GET request using the pliers' requester """
 
         # Make GET request and return target
-        return self.request(url, method=_c.GET)
+        return self.request(url, method=_c.GET, driver_callback=driver_callback)

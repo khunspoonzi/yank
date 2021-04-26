@@ -36,6 +36,10 @@ class Request:
     def set_response(self, response):
         """ Sets a response to the current request object """
 
+        # Return if response is None
+        if response is None:
+            return
+
         # Get headers
         headers = response.request.headers
 

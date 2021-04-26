@@ -3,6 +3,7 @@
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 import copy
+import inspect
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -134,6 +135,52 @@ class Yanker:
             self.default_headers.update(default_headers)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ YANK METHODS                                                               │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Define a yank method wrapper
+        def yank_wrapper(method, driver_callback):
+            """ Wraps a yank method to handle user-defined class logic """
+
+            # Define wrapped yank method
+            def yank_wrapped(target):
+
+                # Get target object from tarket URL
+                target = self.pliers.get(target, driver_callback=driver_callback)
+
+                # Return the evaluated method
+                return method(target)
+
+            # Return the wrapped yank method
+            return yank_wrapped
+
+        # Get yank methods
+        yank_methods = inspect.getmembers(self, predicate=inspect.ismethod)
+        yank_methods = {k: v for k, v in yank_methods if k.startswith("yank_")}
+
+        # Initialize has driver callback boolean
+        has_driver_callback = False
+
+        # Iterate over yank methods
+        for name, method in yank_methods.items():
+
+            # Continue if suffixed method
+            if "__" in name:
+                continue
+
+            # Get driver callback
+            driver_callback = yank_methods.get(f"{name}__driver")
+
+            # Check if driver callback is not null
+            if driver_callback:
+
+                # Set has driver callback to True
+                has_driver_callback = True
+
+            # Wrap and set yank method
+            setattr(self, name, yank_wrapper(method, driver_callback=driver_callback))
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ BROWSER AND DRIVER                                                         │
         # └────────────────────────────────────────────────────────────────────────────┘
 
@@ -141,7 +188,7 @@ class Yanker:
         self.browser = None
 
         # Determine if Selenium driver is required
-        driver_is_required = self.auto_headers
+        driver_is_required = self.auto_headers or has_driver_callback
 
         # Check if driver is required
         if driver_is_required:
@@ -176,11 +223,8 @@ class Yanker:
         # Iterate over start URLs
         for start_url in self.start_urls:
 
-            # Get target object
-            target = self.pliers.get(start_url)
-
             # Call yank start method on start URL
-            # self.yank_start(start_url)
+            self.yank_start(start_url)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ CLOSE DRIVER                                                               │
@@ -200,7 +244,7 @@ class Yanker:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def yank_start(self, target):
-        """ The action performed on each of the Yanker's start URLs """
+        """ The action performed on each of the yanker's start URLs """
 
         # Raise NotImplementedError
         raise NotImplementedError
