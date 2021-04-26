@@ -1,8 +1,17 @@
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ GENERAL IMPORTS                                                                    │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+import tldextract
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
+import yank.constants as _c
+
 from yank.request import Request
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ TARGET                                                                             │
@@ -31,6 +40,9 @@ class Target:
         # Set driver
         self.driver = self.pliers.driver
 
+        # Set yanker
+        self.yanker = pliers.yanker
+
         # Initialize requests
         self.requests = []
 
@@ -44,13 +56,24 @@ class Target:
         # Get URL
         url = self.url
 
+        # Get yanker
+        yanker = self.yanker
+
+        # Determine if should get auto headers
+        should_get_auto_headers = yanker.auto_headers and yanker._auto_headers is None
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ DRIVER                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Get driver
         driver = self.driver
 
-        # Check if driver is not null
-        if driver:
+        # Determine if should use driver
+        should_use_driver = driver and should_get_auto_headers
 
-            print("DRIVER")
+        # Check if driver is not null
+        if should_use_driver:
 
             # Get URL with driver
             driver.get(url)
@@ -61,6 +84,9 @@ class Target:
                 # Get response
                 response = request.response
 
+                # Set request of response
+                response.request = request
+
                 # Initialize request object
                 request = Request(url)
 
@@ -70,10 +96,40 @@ class Target:
                 # Append request to requests
                 self.requests.append(request)
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ AUTO HEADERS                                                       │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Check if should get auto headers
+                if should_get_auto_headers and yanker._auto_headers is None:
+
+                    # Extract registered domain from request URL
+                    domain = tldextract.extract(request.url).registered_domain
+
+                    # Check if registered domain is in the target URL
+                    if domain in url:
+
+                        # Get auto headers
+                        _auto_headers = request.headers
+
+                        # Update auto headers by default headers
+                        _auto_headers.update(yanker.default_headers)
+
+                        # Set auto headers cache to request headers
+                        yanker._auto_headers = request.headers
+
+                        # Set default headers
+                        yanker.default_headers = _auto_headers
+
+                        # Break here
+                        break
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ REQUESTER                                                                  │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Otherwise handle no driver
         else:
-
-            print("REQUESTER")
 
             # Initialize request object
             request = Request(url)
@@ -81,7 +137,19 @@ class Target:
             # Append request to requests
             self.requests.append(request)
 
-            response = self.requester.get(url)
+            # Initialize request kwargs
+            request_kwargs = {}
+
+            # Check if pliers mode is transient
+            if self.pliers.mode == _c.TRANSIENT:
+
+                # TODO: Implement a dynamic get headers method for users to customize
+
+                # Add default headers to request kwargs
+                request_kwargs[_c.HEADERS] = self.pliers.yanker.default_headers
+
+            # Make an HTTP request
+            response = self.requester.get(url, **request_kwargs)
 
             # Set request response
             request.set_response(response)

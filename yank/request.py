@@ -1,4 +1,11 @@
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ SELENIUM IMPORTS                                                                   │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from seleniumwire.request import HTTPHeaders
+
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ REQUEST                                                                            │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -16,6 +23,9 @@ class Request:
         # Set URL
         self.url = url
 
+        # Initialize headers to None
+        self.headers = None
+
         # Initialize response to None
         self.response = None
 
@@ -26,22 +36,20 @@ class Request:
     def set_response(self, response):
         """ Sets a response to the current request object """
 
+        # Get headers
+        headers = response.request.headers
+
+        # Check if headers is a Seleniumwire HTTPHeader object
+        if type(headers) is HTTPHeaders:
+
+            # Convert headers to dict
+            headers = dict(headers)
+
+        # Set request headers
+        self.headers = headers
+
         # Set response
         self.response = response
-
-        print(response)
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ IS LOADING                                                                     │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    @property
-    def is_loading(self):
-        """
-        Returns a boolean of whether the request is loading based on presence of a
-        response
-        """
-        return self.response is None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ STATUS CODE                                                                    │
@@ -52,4 +60,4 @@ class Request:
         """ Returns the status code of the request's response object """
 
         # Return response status code
-        return self.response.status_code if self.response else None
+        return self.response.status_code if self.response is not None else None

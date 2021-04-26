@@ -118,6 +118,9 @@ class Yanker:
             auto_headers if auto_headers is not None else self.auto_headers
         )
 
+        # Initialize auto headers cache
+        self._auto_headers = None
+
         # Get default headers
         default_headers = self.default_headers
 
@@ -173,8 +176,8 @@ class Yanker:
         # Iterate over start URLs
         for start_url in self.start_urls:
 
+            # Get target object
             target = self.pliers.get(start_url)
-            print([t.status_code for t in target.requests])
 
             # Call yank start method on start URL
             # self.yank_start(start_url)
