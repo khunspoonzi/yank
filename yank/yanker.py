@@ -62,6 +62,9 @@ class Yanker:
     SESSION = _c.SESSION
     TRANSIENT = _c.TRANSIENT
 
+    # Interface
+    TYPE = _c.TYPE
+
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CUSTOMIZABLE CLASS ATTRIBUTES                                                  │
     # └────────────────────────────────────────────────────────────────────────────────┘

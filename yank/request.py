@@ -4,6 +4,12 @@
 
 from seleniumwire.request import HTTPHeaders
 
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ PROJECT IMPORTS                                                                    │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from yank.response import Response
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ REQUEST                                                                            │
@@ -17,11 +23,14 @@ class Request:
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, url):
+    def __init__(self, url, driver=None):
         """ Init Method """
 
         # Set URL
         self.url = url
+
+        # Set driver
+        self.driver = driver
 
         # Initialize headers to None
         self.headers = None
@@ -53,15 +62,4 @@ class Request:
         self.headers = headers
 
         # Set response
-        self.response = response
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ STATUS CODE                                                                    │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    @property
-    def status_code(self):
-        """ Returns the status code of the request's response object """
-
-        # Return response status code
-        return self.response.status_code if self.response is not None else None
+        self.response = Response(request=self, response=response)

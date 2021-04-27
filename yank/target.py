@@ -87,7 +87,18 @@ class Target:
         """ Returns the status code of the request that shares the target's URL """
 
         # Return target request status code
-        return self.request.status_code
+        return self.response.status_code
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ HTML                                                                           │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def html(self):
+        """ Returns the HTML of the target's response object """
+
+        # Return HTML
+        return self.response.html
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ JSON                                                                           │
@@ -95,16 +106,21 @@ class Target:
 
     @property
     def json(self):
-        """ Returns a JSON dict of the response object """
+        """ Returns a JSON dict of the target's response object """
 
-        try:
-            # Return JSON data
-            return self.response.json()
+        # Return JSON
+        return self.response.json
 
-        except AttributeError:
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ SOUP                                                                           │
+    # └────────────────────────────────────────────────────────────────────────────────┘
 
-            # Return None
-            return None
+    @property
+    def soup(self):
+        """ Returns a HTML BeautifulSoup of the target's response object """
+
+        # Return soup
+        return self.response.soup
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ GET                                                                            │
@@ -144,7 +160,7 @@ class Target:
             if driver_callback:
 
                 # Execute driver callback
-                driver_callback(driver)
+                driver = driver_callback(driver) or driver
 
             # Iterate over driver requests
             for request in driver.requests:
@@ -159,7 +175,7 @@ class Target:
                     response.request = request
 
                 # Initialize request object
-                request = Request(url)
+                request = Request(url, driver=driver)
 
                 # Set request response
                 request.set_response(response)
@@ -241,3 +257,27 @@ class Target:
 
             # Set request response
             request.set_response(response)
+
+            from pprint import pprint
+
+            pprint(request.headers)
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ FILTER_REQUESTS                                                                │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def filter_requests(self, **kwargs):
+        """ Filters the target's requests by given keyword arguments """
+
+        # Get requests
+        requests = self.requests
+
+        # Filter requests
+        requests = [
+            r
+            for r in requests
+            if all([getattr(r, k, None) == v for k, v in kwargs.items()])
+        ]
+
+        # Return requests
+        return requests
