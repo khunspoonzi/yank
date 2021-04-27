@@ -114,6 +114,13 @@ class Browser:
             # Add headless option
             options.headless = headless
 
+            # Disable blink features
+            # Helps to evade CloudFlare asking you to prove you are human with captcha
+            options.add_argument("--disable-blink-features=AutomationControlled")
+
+            # See https://stackoverflow.com/questions/64165726/
+            # selenium-stuck-on-checking-your-browser-before-accessing-url
+
             # Define Chrome driver kwargs
             driver_kwargs = {}
 
