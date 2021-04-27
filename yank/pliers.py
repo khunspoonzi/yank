@@ -47,6 +47,11 @@ class Pliers:
             # Set requester to a new requests session
             self.requester = requests.Session()
 
+            # Set default headers
+            self.requester.headers.update(self.yanker.default_headers)
+
+            # TODO: Implement a dynamic get headers method for users to customizet
+
         # Set driver
         self.driver = yanker.browser and yanker.browser.driver
 

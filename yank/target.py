@@ -87,7 +87,7 @@ class Target:
         """ Returns the status code of the request that shares the target's URL """
 
         # Return target request status code
-        return self.target_request.status_code
+        return self.request.status_code
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ JSON                                                                           │
@@ -134,6 +134,8 @@ class Target:
 
         # Check if driver is not null
         if should_use_driver:
+
+            # TODO: Copy cookies over from session
 
             # Get URL with driver
             driver.get(url)
@@ -192,6 +194,23 @@ class Target:
 
                         # Break here
                         break
+
+            # Check if mode is session
+            if self.pliers.mode == _c.SESSION:
+
+                # Get driver user agent
+                driver_user_agent = driver.execute_script("return navigator.userAgent;")
+
+                # Update session user agent
+                self.requester.headers.update({"User-Agent": driver_user_agent})
+
+                # Get driver cookies
+                driver_cookies = driver.get_cookies()
+
+                # Update session cookies
+                self.requester.cookies.update(
+                    {c["name"]: c["value"] for c in driver_cookies}
+                )
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ REQUESTER                                                                  │

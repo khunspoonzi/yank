@@ -4,6 +4,9 @@
 
 import copy
 import inspect
+import urllib.parse
+
+from functools import reduce
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -44,6 +47,12 @@ def constants(cls):
 @constants
 class Yanker:
     """ A base class for custom Yanker classes """
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ PENDING FEATURES                                                               │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    # TODO: Work on driverless CloudFlare support
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -248,3 +257,34 @@ class Yanker:
 
         # Raise NotImplementedError
         raise NotImplementedError
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ URLJOIN                                                                        │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def urljoin(self, *args, params=None):
+        """ Joins a series of URL components """
+
+        # Get joined URL from the supplied components
+        url = reduce(urllib.parse.urljoin, args).rstrip("/")
+
+        # Convert params to a list of tuples
+        params = params.items() if type(params) is dict else params
+
+        # Get quote function
+        q = urllib.parse.quote_plus
+
+        # Convert params to list
+        params = [f"{q(key)}={q(val)}" for key, val in params] if params else []
+
+        # Convert params to string
+        params = "&".join(params)
+
+        # Check if params is not null
+        if params:
+
+            # Append params to url
+            url += "?" + params
+
+        # Return the joined URL
+        return url
