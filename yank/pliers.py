@@ -52,8 +52,22 @@ class Pliers:
 
             # TODO: Implement a dynamic get headers method for users to customizet
 
+        # Set browser
+        self.browser = yanker.browser
+
         # Set driver
-        self.driver = yanker.browser and yanker.browser.driver
+        self.driver = self.browser and self.browser.driver
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DRIVER QUICK                                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def driver_quick(self):
+        """ Returns an initialized quick driver from the pliers' browser """
+
+        # Return browser quick driver
+        return self.browser.driver_quick
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ REQUEST                                                                        │

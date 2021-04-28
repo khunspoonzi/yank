@@ -4,6 +4,8 @@
 
 import tldextract
 
+from urllib.parse import urlparse
+
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
@@ -30,6 +32,12 @@ class Target:
 
         # Set URL
         self.url = url
+
+        # Get parsed URL
+        url_parsed = urlparse(url)
+
+        # Set base URL
+        self.url_base = f"{url_parsed.scheme}://{url_parsed.netloc}"
 
         # Set pliers
         self.pliers = pliers
@@ -76,7 +84,7 @@ class Target:
         """ Returns the response of the target request """
 
         # Return target request's response
-        return self.request.response
+        return self.request.response if self.request else None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ STATUS CODE                                                                    │
@@ -87,7 +95,7 @@ class Target:
         """ Returns the status code of the request that shares the target's URL """
 
         # Return target request status code
-        return self.response.status_code
+        return self.response.status_code if self.response else None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ HTML                                                                           │
@@ -153,14 +161,39 @@ class Target:
 
             # TODO: Copy cookies over from session
 
-            # Get URL with driver
-            driver.get(url)
-
             # Check if driver callback is not null
             if driver_callback:
 
+                # Check if driver mode is not none and callback has stop when decorator
+                if getattr(driver_callback, "has_stop_when", False):
+
+                    # Get quick driver
+                    driver_quick = self.pliers.driver_quick
+
+                    # Copy cookies from driver to quick driver
+
+                    # Get URL with quick driver
+                    driver_quick.get(url)
+
+                    # Copy cookies from quick driver back to driver
+
+                    # Set local driver to quick driver
+                    driver = driver_quick
+
+                # Otherwise get URL as usual
+                else:
+
+                    # Get URL with driver
+                    driver.get(url)
+
                 # Execute driver callback
-                driver = driver_callback(driver) or driver
+                driver_callback(driver)
+
+            # Otherwise handle case of no driver callback
+            else:
+
+                # Get URL with driver
+                driver.get(url)
 
             # Iterate over driver requests
             for request in driver.requests:

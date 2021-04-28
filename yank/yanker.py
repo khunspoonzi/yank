@@ -19,32 +19,10 @@ from yank.pliers import Pliers
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
-# │ CONSTANTS                                                                          │
-# └────────────────────────────────────────────────────────────────────────────────────┘
-
-
-def constants(cls):
-    """
-    Dynamically applies selected constants from other utility classes, so that users
-    don't have to import import those utility classes to access their constants
-    """
-
-    # Iterate over supported browsers
-    for browser_slug in Browser.supported_browsers:
-
-        # Set browser constant as class attribute
-        setattr(cls, browser_slug.upper(), browser_slug)
-
-    # Return the class
-    return cls
-
-
-# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ YANKER                                                                             │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 
-@constants
 class Yanker:
     """ A base class for custom Yanker classes """
 
@@ -85,8 +63,14 @@ class Yanker:
     # Initialize default browser
     default_browser = Browser.CHROME
 
-    # Initialize headless to True
-    headless = True
+    # Initialize driver mode to normal
+    driver_mode = Browser.NORMAL
+
+    # Initialize driver headless to True
+    driver_headless = True
+
+    # Initialize Browser class so that users can easily access its constants
+    Browser = Browser
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
@@ -99,7 +83,8 @@ class Yanker:
         auto_headers=None,
         default_headers=None,
         default_browser="",
-        headless=None,
+        driver_mode=None,
+        driver_headless=None,
     ):
         """ Init Method """
 
@@ -209,11 +194,20 @@ class Yanker:
             # Get default browser and supported browsers
             default_browser = default_browser or self.default_browser
 
-            # Get headless
-            headless = headless if headless is not None else self.headless
+            # Get driver mode
+            driver_mode = driver_mode if driver_mode is not None else self.driver_mode
+
+            # Get driver headless
+            driver_headless = (
+                driver_headless if driver_headless is not None else self.driver_headless
+            )
 
             # Initialize and set browser
-            self.browser = Browser(default_browser, headless=headless)
+            self.browser = Browser(
+                default_browser,
+                driver_mode=driver_mode,
+                driver_headless=driver_headless,
+            )
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ PLIERS                                                                     │
@@ -275,11 +269,16 @@ class Yanker:
     def close_driver(self):
         """ Closes the yanker's active driver """
 
-        # Get driver
-        driver = self.browser and self.browser.driver
+        # Get browser
+        browser = self.browser
 
-        # Close driver
+        # Get drivers
+        driver = browser and browser.driver
+        driver_quick = browser and browser._driver_quick
+
+        # Close drivers
         driver and driver.close()
+        driver_quick and driver_quick.close()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ URLJOIN                                                                        │
@@ -330,3 +329,11 @@ class Yanker:
 
         # Return the first value
         return elements[0].text if elements else default
+
+    def haha(func):
+        func.__decorator_name__ = "haha"
+        return func
+
+    @haha
+    def test(self):
+        return "haha"
