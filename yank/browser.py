@@ -12,10 +12,10 @@ from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.utils import ChromeType
-
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -228,3 +228,35 @@ class Browser:
 
         # Return driver
         return driver
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ STOP WHEN                                                                      │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @staticmethod
+    def stop_when(condition, timeout=10):
+        """ Stops a driver from loading further when a certain condition is met """
+
+        # Define decorator
+        def decorator(method):
+
+            # Define wrapper
+            def wrapper(yanker, driver):
+
+                # Wait for listing nav links to appear
+                WebDriverWait(driver, timeout).until(condition)
+
+                # Stop further loading
+                driver.execute_script("window.stop();")
+
+                # Execute original method
+                return method(yanker, driver)
+
+            # Set has stop when attribute on wrapped method
+            wrapper.has_stop_when = True
+
+            # Return wrapper
+            return wrapper
+
+        # Return the decorator
+        return decorator
