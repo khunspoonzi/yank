@@ -40,11 +40,11 @@ class Browser:
 
     # Driver modes
     EAGER = _c.EAGER
-    NONE = _c.NONE
     NORMAL = _c.NORMAL
+    QUICK = _c.QUICK
 
     # Define driver modes
-    DRIVER_MODES = [EAGER, NONE, NORMAL]
+    DRIVER_MODES = [EAGER, QUICK, NORMAL]
 
     # Browsers
     CHROME = _c.CHROME
@@ -114,10 +114,10 @@ class Browser:
         """
 
         # Get constants
-        NONE = self.NONE
+        QUICK = self.QUICK
 
-        # Check if driver mode is none
-        if self.driver_mode == NONE:
+        # Check if driver mode is quick
+        if self.driver_mode == QUICK:
 
             # Return the driver
             return self.driver
@@ -129,7 +129,7 @@ class Browser:
             return self._driver_quick
 
         # Initialize a new quick driver
-        driver_quick = self.initialize_driver(self.slug, NONE, self.driver_headless)
+        driver_quick = self.initialize_driver(self.slug, _c.NONE, self.driver_headless)
 
         # Set quick driver
         self._driver_quick = driver_quick
