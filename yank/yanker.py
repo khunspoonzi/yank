@@ -9,6 +9,12 @@ import urllib.parse
 from functools import reduce
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ SELENIUM IMPORTS                                                                   │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from selenium.webdriver.support.ui import WebDriverWait
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -330,10 +336,34 @@ class Yanker:
         # Return the first value
         return elements[0].text if elements else default
 
-    def haha(func):
-        func.__decorator_name__ = "haha"
-        return func
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ STOP WHEN                                                                      │
+    # └────────────────────────────────────────────────────────────────────────────────┘
 
-    @haha
-    def test(self):
-        return "haha"
+    @staticmethod
+    def stop_when(condition, timeout=10):
+        """ Stops a driver from loading further when a certain condition is met """
+
+        # Define decorator
+        def decorator(method):
+
+            # Define wrapper
+            def wrapper(yanker, driver):
+
+                # Wait for listing nav links to appear
+                WebDriverWait(driver, timeout).until(condition)
+
+                # Stop further loading
+                driver.execute_script("window.stop();")
+
+                # Execute original method
+                return method(yanker, driver)
+
+            # Set has stop when attribute on wrapped method
+            wrapper.has_stop_when = True
+
+            # Return wrapper
+            return wrapper
+
+        # Return the decorator
+        return decorator
