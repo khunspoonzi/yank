@@ -52,6 +52,7 @@ class Yanker:
     # │ PENDING FEATURES                                                               │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
+    # TODO: Enforce transience in the case of driver (new driver each time)
     # TODO: Work on driverless CloudFlare support
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
@@ -155,13 +156,13 @@ class Yanker:
             """ Wraps a yank method to handle user-defined class logic """
 
             # Define wrapped yank method
-            def yank_wrapped(target):
+            def yank_wrapped(target, *args, **kwargs):
 
                 # Get target object from tarket URL
                 target = self.pliers.get(target, driver_callback=driver_callback)
 
                 # Return the evaluated method
-                return method(target)
+                return method(target, *args, *kwargs)
 
             # Return the wrapped yank method
             return yank_wrapped
@@ -235,21 +236,27 @@ class Yanker:
         # Iterate over start URLs
         for start_url in self.start_urls:
 
-            # Call yank start method on start URL
-            self.yank_start(start_url)
+            # Initialize try-except block
+            try:
+
+                # Call yank start method on start URL
+                self.yank_start(start_url)
+
+            # Except any exception
+            except Exception:
+
+                # Close driver
+                self.close_driver()
+
+                # Re-raise the exception
+                raise
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ CLOSE DRIVER                                                               │
         # └────────────────────────────────────────────────────────────────────────────┘
 
-        # Get driver
-        driver = self.browser and self.browser.driver
-
-        # Check if driver is not nulle
-        if driver:
-
-            # Close driver
-            driver.close()
+        # Close driver
+        self.close_driver()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ YANK START                                                                     │
@@ -259,7 +266,20 @@ class Yanker:
         """ The action performed on each of the yanker's start URLs """
 
         # Raise NotImplementedError
-        raise NotImplementedError
+        raise
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CLOSE DRIVER                                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def close_driver(self):
+        """ Closes the yanker's active driver """
+
+        # Get driver
+        driver = self.browser and self.browser.driver
+
+        # Close driver
+        driver and driver.close()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ URLJOIN                                                                        │
@@ -291,3 +311,22 @@ class Yanker:
 
         # Return the joined URL
         return url
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET TEXT                                                                       │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def get_text(self, element, selector, default="N/A", many=False):
+        """ Returns the text of a selected element """
+
+        # Get elements
+        elements = element.select(selector)
+
+        # Check if many is True
+        if many:
+
+            # Return a list of values
+            return [e.text for e in elements] if elements else [default]
+
+        # Return the first value
+        return elements[0].text if elements else default

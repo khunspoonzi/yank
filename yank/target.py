@@ -258,10 +258,6 @@ class Target:
             # Set request response
             request.set_response(response)
 
-            from pprint import pprint
-
-            pprint(request.headers)
-
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ FILTER_REQUESTS                                                                │
     # └────────────────────────────────────────────────────────────────────────────────┘
