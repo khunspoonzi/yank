@@ -245,7 +245,7 @@ class Yanker:
             # Except any exception
             except Exception:
 
-                # Close driver
+                # Close driver to avoid lingering headless browser instances
                 self.close_driver()
 
                 # Re-raise the exception
