@@ -134,50 +134,12 @@ class Yanker:
             self.default_headers.update(default_headers)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
-        # │ YANK METHODS                                                               │
+        # │ WRAP METHODS                                                               │
         # └────────────────────────────────────────────────────────────────────────────┘
 
-        # Define a yank method wrapper
-        def yank_wrapper(method, driver_callback):
-            """ Wraps a yank method to handle user-defined class logic """
-
-            # Define wrapped yank method
-            def yank_wrapped(target, *args, **kwargs):
-
-                # Get target object from tarket URL
-                target = self.pliers.get(target, driver_callback=driver_callback)
-
-                # Return the evaluated method
-                return method(target, *args, *kwargs)
-
-            # Return the wrapped yank method
-            return yank_wrapped
-
-        # Get yank methods
-        yank_methods = inspect.getmembers(self, predicate=inspect.ismethod)
-        yank_methods = {k: v for k, v in yank_methods if k.startswith("yank_")}
-
-        # Initialize has driver callback boolean
-        has_driver_callback = False
-
-        # Iterate over yank methods
-        for name, method in yank_methods.items():
-
-            # Continue if suffixed method
-            if "__" in name:
-                continue
-
-            # Get driver callback
-            driver_callback = yank_methods.get(f"{name}__driver")
-
-            # Check if driver callback is not null
-            if driver_callback:
-
-                # Set has driver callback to True
-                has_driver_callback = True
-
-            # Wrap and set yank method
-            setattr(self, name, yank_wrapper(method, driver_callback=driver_callback))
+        # Call wrap methods
+        # This will determine whether the user has defined a driver callback method
+        has_driver_callback = self.wrap_methods()
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ BROWSER AND DRIVER                                                         │
@@ -316,7 +278,7 @@ class Yanker:
     # │ GET TEXT                                                                       │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get_text(self, element, selector, default="N/A", many=False):
+    def get_text(self, element, selector, default="", many=False):
         """ Returns the text of a selected element """
 
         # Get elements
@@ -330,3 +292,78 @@ class Yanker:
 
         # Return the first value
         return elements[0].text if elements else default
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ WRAP METHODS                                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def wrap_methods(self):
+        """ Wraps user-defined methods in existing Yanker utility methods """
+
+        # Define a method wrapper
+        def wrapper(method, driver_callback, clean_callback):
+            """ Wraps a yank method to handle user-defined class logic """
+
+            # Define wrapped method
+            def wrapped(target, *args, **kwargs):
+
+                # Get target object from tarket URL
+                target = self.pliers.get(target, driver_callback=driver_callback)
+
+                # Get result
+                result = method(target, *args, *kwargs)
+
+                # Check if clean callback exists
+                if clean_callback:
+
+                    # Pass result through clean callback
+                    result = clean_callback(result) or result
+
+                # Return the evaluated method
+                return result
+
+            # Return the wrapped method
+            return wrapped
+
+        # Get all methods
+        all_methods = inspect.getmembers(self, predicate=inspect.ismethod)
+        all_methods = {k: v for k, v in all_methods}
+
+        # Get yank methods
+        yank_methods = {k: v for k, v in all_methods.items() if k.startswith("yank_")}
+
+        # Initialize has driver callback boolean
+        has_driver_callback = False
+
+        # Iterate over yank methods
+        for name, method in yank_methods.items():
+
+            # Continue if suffixed method
+            if "__" in name:
+                continue
+
+            # Get driver callback
+            driver_callback = yank_methods.get(f"{name}__driver")
+
+            # Check if driver callback is not null
+            if driver_callback:
+
+                # Set has driver callback to True
+                has_driver_callback = True
+
+            # Get clean callback
+            clean_callback = all_methods.get(name.replace("yank_", "clean_", 1))
+
+            # Wrap and set yank method
+            setattr(
+                self,
+                name,
+                wrapper(
+                    method,
+                    driver_callback=driver_callback,
+                    clean_callback=clean_callback,
+                ),
+            )
+
+        # Return has driver callback
+        return has_driver_callback
