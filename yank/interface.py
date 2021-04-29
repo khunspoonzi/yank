@@ -1,4 +1,10 @@
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ GENERAL IMPORTS                                                                    │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from datetime import datetime
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -22,6 +28,13 @@ class Interface:
     TYPE = _c.TYPE
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CLASS ATTRIBUTES                                                               │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    # Set database meta
+    db_meta = None
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -43,11 +56,44 @@ class Interface:
     def cast(self, field, value):
         """ Casts a value according to a field in the interface's field map """
 
-        # Get to type
-        to_type = self.field_map[field][self.TYPE]
+        # Get field map
+        field_map = self.field_map
 
-        # Cast value to appropriate type
-        value = to_type(value)
+        # Check if value is None
+        if value is None:
+
+            # Get null boolean
+            null = field_map[field].get(self.NULL, False)
+
+            # Check if null is permitted
+            if null:
+
+                # Return the value
+                return value
+
+        # Get to type
+        to_type = field_map[field][self.TYPE]
+
+        # Check if to type is int
+        if to_type is int:
+
+            # Check if value is str
+            if type(value) is str:
+
+                # Remove common unwanted characters
+                value = value.replace(",", "")
+
+        # Handle case of datetime
+        if to_type is datetime:
+
+            # Assert value is datetime
+            assert type(value) is datetime, f"{field} is not a valid datetime"
+
+        # Handle normal case
+        else:
+
+            # Cast value to appropriate type
+            value = to_type(value)
 
         # Return value
         return value

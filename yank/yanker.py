@@ -8,6 +8,11 @@ import urllib.parse
 
 from functools import reduce
 
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ SQL ALCHEMY IMPORTS                                                                │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from sqlalchemy import create_engine, MetaData
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -68,6 +73,9 @@ class Yanker:
     # Initialize driver headless to True
     driver_headless = True
 
+    # Define DB name
+    db_name = "yanker"
+
     # Initialize Browser class so that users can easily access its constants
     Browser = Browser
 
@@ -84,6 +92,7 @@ class Yanker:
         default_browser="",
         driver_mode=None,
         driver_headless=None,
+        db_name=None,
     ):
         """ Init Method """
 
@@ -93,6 +102,19 @@ class Yanker:
 
         # Set mode
         self.mode = mode if mode else self.mode
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ DATABASE                                                                   │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Set database name
+        self.db_name = db_name or self.db_name
+
+        # Initialize database engine
+        self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
+
+        # Initialize database meta
+        self.db_meta = MetaData()
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ START URLS                                                                 │
@@ -298,6 +320,10 @@ class Yanker:
     def wrap_methods(self):
         """ Wraps user-defined methods in existing Yanker utility methods """
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ WRAPPER                                                                    │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Define a method wrapper
         def wrapper(method, driver_callback, clean_callback):
             """ Wraps a yank method to handle user-defined class logic """
@@ -305,23 +331,57 @@ class Yanker:
             # Define wrapped method
             def wrapped(target, *args, **kwargs):
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ MAKE REQUEST                                                       │
+                # └────────────────────────────────────────────────────────────────────┘
+
                 # Get target object from tarket URL
                 target = self.pliers.get(target, driver_callback=driver_callback)
 
                 # Get result
                 result = method(target, *args, *kwargs)
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ CLEAN RESULT                                                       │
+                # └────────────────────────────────────────────────────────────────────┘
+
                 # Check if clean callback exists
                 if clean_callback:
 
                     # Pass result through clean callback
-                    result = clean_callback(result) or result
+                    result = clean_callback(target.interface, result) or result
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ CAST VALUES                                                        │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Get interface
+                interface = target.interface
+
+                # Check if interface is not None
+                if interface is not None:
+
+                    # Convert result to list if not list
+                    result = result if type(result) in [list, tuple] else [result]
+
+                    # Iterate over result
+                    for item in result:
+
+                        # Iterate over field-value pairs in item
+                        for field, value in item.items():
+
+                            # Cast value to appropriate type
+                            item[field] = interface.cast(field, value)
 
                 # Return the evaluated method
                 return result
 
             # Return the wrapped method
             return wrapped
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ WRAP METHODS                                                               │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Get all methods
         all_methods = inspect.getmembers(self, predicate=inspect.ismethod)
