@@ -190,7 +190,7 @@ class Browser:
             # selenium-stuck-on-checking-your-browser-before-accessing-url
 
             # Initialize desired capabilities
-            desired_capabilities = DesiredCapabilities.FIREFOX
+            desired_capabilities = DesiredCapabilities.CHROME
 
             # Set page load strategy to None
             desired_capabilities.update(desired_capability_args)
@@ -206,7 +206,7 @@ class Browser:
 
             # Initialize a Chrome driver
             driver = webdriver.Chrome(
-                ChromeDriverManager().install(),
+                executable_path=ChromeDriverManager().install(),
                 options=options,
                 desired_capabilities=desired_capabilities,
                 **driver_kwargs,
