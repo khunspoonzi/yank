@@ -16,6 +16,7 @@ from functools import reduce
 import yank.constants as _c
 
 from yank.browser import Browser
+from yank.interface import Interface
 from yank.pliers import Pliers
 
 
@@ -41,9 +42,6 @@ class Yanker:
     # Modes
     SESSION = _c.SESSION
     TRANSIENT = _c.TRANSIENT
-
-    # Interface
-    TYPE = _c.TYPE
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CUSTOMIZABLE CLASS ATTRIBUTES                                                  │
@@ -367,3 +365,35 @@ class Yanker:
 
         # Return has driver callback
         return has_driver_callback
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ INTERFACE                                                                      │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @staticmethod
+    def interface(**kwargs):
+        """
+        Registers an interface with a yank method
+        This effectively marks the method's return value to be commited to the daatabase
+        """
+
+        # Initialize an interface
+        interface = Interface(**kwargs)
+
+        # Define decorator
+        def decorator(method):
+
+            # Define wrapper
+            def wrapper(instance, target, *args, **kwargs):
+
+                # Set interface on target
+                target.interface = interface
+
+                # Execute original method
+                return method(instance, target, *args, **kwargs)
+
+            # Return wrapper
+            return wrapper
+
+        # Return the decorator
+        return decorator

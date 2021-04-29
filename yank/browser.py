@@ -241,7 +241,7 @@ class Browser:
         def decorator(method):
 
             # Define wrapper
-            def wrapper(yanker, driver):
+            def wrapper(instance, driver):
 
                 # Wait for listing nav links to appear
                 WebDriverWait(driver, timeout).until(condition)
@@ -250,7 +250,7 @@ class Browser:
                 driver.execute_script("window.stop();")
 
                 # Execute original method
-                return method(yanker, driver)
+                return method(instance, driver)
 
             # Set has stop when attribute on wrapped method
             wrapper.has_stop_when = True
