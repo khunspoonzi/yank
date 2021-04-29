@@ -14,6 +14,7 @@ selenium-wire = "^4.2.4"
 tldextract = "^3.1.0"
 beautifulsoup4 = "^4.9.3"
 lxml = "^4.6.3"
+undetected-chromedriver = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 

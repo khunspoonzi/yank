@@ -338,6 +338,17 @@ requests = ">=2.1.0"
 requests-file = ">=1.4"
 
 [[package]]
+name = "undetected-chromedriver"
+version = "2.2.1"
+description = "selenium.webdriver.Chrome replacement with focus on stealth. not triggered by Distil / CloudFlare / Imperva / DataDome / hCaptcha and such.  NOTE: results may vary due to many factors. No guarantees are given, except for ongoing efforts in understanding detection algorithms. "
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+selenium = "*"
+
+[[package]]
 name = "urllib3"
 version = "1.26.4"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -378,7 +389,7 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6.1"
-content-hash = "c796f8da6d757ccbc1e13b04dff8d2febc7787ed5ff633b183d98552f3d14422"
+content-hash = "fca628a28a2fd106bd8efbdd8b956e9b3d477db63e3fe775a27918dcf6cd38ca"
 
 [metadata.files]
 beautifulsoup4 = [
@@ -594,6 +605,9 @@ soupsieve = [
 tldextract = [
     {file = "tldextract-3.1.0-py2.py3-none-any.whl", hash = "sha256:e57f22b6d00a28c21673d2048112f1bdcb6a14d4711568305f6bb96cf5bb53a1"},
     {file = "tldextract-3.1.0.tar.gz", hash = "sha256:cfae9bc8bda37c3e8c7c8639711ad20e95dc85b207a256b60b0b23d7ff5540ea"},
+]
+undetected-chromedriver = [
+    {file = "undetected-chromedriver-2.2.1.tar.gz", hash = "sha256:687d7aa5c490f7d000931f364dfe468eca54ba238db090d625c4f773e5e90c93"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.4-py2.py3-none-any.whl", hash = "sha256:2f4da4594db7e1e110a944bb1b551fdf4e6c136ad42e4234131391e21eb5b0df"},
