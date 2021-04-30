@@ -8,13 +8,22 @@ from datetime import datetime
 # │ SQLALCHEMY IMPORTS                                                                 │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, Table
+from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 import yank.constants as _c
+
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ DATABASE                                                                           │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+# Initialize base class
+Base = declarative_base()
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -30,9 +39,14 @@ class Interface:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     # Interface
-    ID = _c.ID
     NULL = _c.NULL
     TYPE = _c.TYPE
+    UNIQUE = _c.UNIQUE
+
+    # Fields
+    ID = _c.ID
+    URL = _c.URL
+    YANKED_AT = _c.YANKED_AT
 
     # Type Map
     TYPE_MAP = {
@@ -42,15 +56,19 @@ class Interface:
         datetime: DateTime,
     }
 
+    # Set base
+    Base = Base
+
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, db_meta, db_table_name, **kwargs):
+    def __init__(self, db_table_name, **kwargs):
         """ Init Method """
 
-        # Set database meta
-        self.db_meta = db_meta
+        # Get common constants
+        TYPE = self.TYPE
+        UNIQUE = self.UNIQUE
 
         # Set table name
         self.db_table_name = db_table_name
@@ -58,27 +76,78 @@ class Interface:
         # Initialize field map from kwargs
         field_map = kwargs
 
+        # Add yanked at and URL to field map
+        field_map[self.URL] = str
+        field_map[self.YANKED_AT] = datetime
+
         # Normalize the structure of the field map
         self.field_map = {
-            k: (v if type(v) is dict else {self.TYPE: v}) for k, v in field_map.items()
+            k: (v if type(v) is dict else {TYPE: v}) for k, v in field_map.items()
         }
 
-        # Define table
-        self.table = Table(
-            self.db_table_name,
-            self.db_meta,
-            Column(self.ID, Integer, primary_key=True),
-            *[
-                Column(field, self.TYPE_MAP[info[self.TYPE]])
-                for field, info in self.field_map.items()
-            ],
-        )
+        # Define columns decorator
+        def columns(cls):
+            """ Dynamically sets SQLAlchemy columns on a target ORM class """
+
+            # Iterate over field map
+            for field, info in self.field_map.items():
+
+                # Get column type
+                ColType = self.TYPE_MAP[info[TYPE]]
+
+                # Get unique
+                unique = info.get(UNIQUE, False)
+
+                # Set class attribute
+                setattr(cls, field, Column(ColType, unique=unique))
+
+            # Return the ORM class
+            return cls
+
+        # Define Item ORM class
+        @columns
+        class Item(Base):
+            """ The ORM class that will house the user-defined columns """
+
+            # Set table name
+            __tablename__ = self.db_table_name
+
+            # Set ID as primary key
+            id = Column(Integer, primary_key=True)
+
+        # Set Item class on interface object
+        self._Item = Item
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CAST                                                                           │
+    # │ ITEM                                                                           │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def cast(self, field, value):
+    def Item(self, **kwargs):
+        """ An Item constructor that wraps the SQLAlchemy ORM Item class """
+
+        # Cast the item fields spplied as kawrgs and return an initialized Item object
+        return self._Item(**self.cast_item(kwargs))
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CAST DICT                                                                      │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def cast_item(self, item_dict):
+        """ Casts a dict of item fields according to a the interface's field map """
+
+        # Cast item dict
+        item_dict = {
+            field: self.cast_field(field, value) for field, value in item_dict.items()
+        }
+
+        # Return the item dict
+        return item_dict
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CAST FIELD                                                                     │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def cast_field(self, field, value):
         """ Casts a value according to a field in the interface's field map """
 
         # Get field map

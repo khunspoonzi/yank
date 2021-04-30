@@ -15,7 +15,8 @@ from functools import reduce
 # │ SQL ALCHEMY IMPORTS                                                                │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -27,13 +28,6 @@ from yank.browser import Browser
 from yank.interface import Interface
 from yank.target import Target
 
-
-# ┌────────────────────────────────────────────────────────────────────────────────────┐
-# │ DATABASE                                                                           │
-# └────────────────────────────────────────────────────────────────────────────────────┘
-
-# Initialize a global database meta instance
-db_meta = MetaData()
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ YANKER                                                                             │
@@ -154,7 +148,13 @@ class Yanker:
         self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
 
         # Create tables
-        db_meta.create_all(self.db_engine)
+        Interface.Base.metadata.create_all(self.db_engine)
+
+        # Make a database session class
+        DBSession = sessionmaker(bind=self.db_engine)
+
+        # Initialize database session
+        self.db_session = DBSession()
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ START URLS                                                                 │
@@ -394,7 +394,8 @@ class Yanker:
         """ Returns a dict of table objects in the database """
 
         # Return tables
-        return db_meta.tables
+        return []
+        # return db_meta.tables
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ TABLE NAMES                                                                    │
@@ -465,21 +466,17 @@ class Yanker:
                         if item is None:
                             continue
 
-                        # Iterate over field-value pairs in item
-                        for field, value in item.items():
-
-                            # Cast value to appropriate type
-                            item[field] = interface.cast(field, value)
-
                         # Add URL to item
                         item[_c.URL] = target.url
 
                         # Add timestamp to item
                         item[_c.YANKED_AT] = self.now()
 
-                    from pprint import pprint
+                        # Convert to ORM item
+                        item = interface.Item(**item)
 
-                    pprint(result)
+                        self.db_session.add(item)
+                        self.db_session.commit()
 
                 # Return the evaluated method
                 return result
@@ -554,10 +551,13 @@ class Yanker:
             db_table_name = method_name.replace("yank_", "")
 
             # Initialize an interface
-            interface = Interface(db_meta, db_table_name=db_table_name, **kwargs)
+            interface = Interface(db_table_name=db_table_name, **kwargs)
 
             # Define wrapper
             def wrapper(instance, target, *args, **kwargs):
+
+                print("---------------")
+                print(instance.db_session.query(interface._Item).count())
 
                 # Set interface on target
                 target.interface = interface
