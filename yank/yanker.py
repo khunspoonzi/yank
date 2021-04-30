@@ -5,6 +5,7 @@
 import arrow
 import copy
 import inspect
+import requests
 import urllib.parse
 
 from functools import reduce
@@ -23,7 +24,7 @@ import yank.constants as _c
 
 from yank.browser import Browser
 from yank.interface import Interface
-from yank.pliers import Pliers
+from yank.target import Target
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -48,6 +49,13 @@ class Yanker:
     # Modes
     SESSION = _c.SESSION
     TRANSIENT = _c.TRANSIENT
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CLASS ATTRIBUTES                                                               │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    # Define requester
+    requester = requests
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CUSTOMIZABLE CLASS ATTRIBUTES                                                  │
@@ -103,6 +111,17 @@ class Yanker:
 
         # Set mode
         self.mode = mode if mode else self.mode
+
+        # Check if mode is session
+        if self.mode == _c.SESSION:
+
+            # Set requester to a new requests session
+            self.requester = requests.Session()
+
+            # Set default headers
+            self.requester.headers.update(self.default_headers)
+
+            # TODO: Implement a dynamic get headers method for users to customizet
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ DATABASE                                                                   │
@@ -193,13 +212,6 @@ class Yanker:
                 driver_headless=driver_headless,
             )
 
-        # ┌────────────────────────────────────────────────────────────────────────────┐
-        # │ PLIERS                                                                     │
-        # └────────────────────────────────────────────────────────────────────────────┘
-
-        # Initialize pliers
-        self.pliers = Pliers(yanker=self)
-
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ YANK                                                                           │
     # └────────────────────────────────────────────────────────────────────────────────┘
@@ -245,6 +257,35 @@ class Yanker:
 
         # Raise NotImplementedError
         raise
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ REQUEST                                                                        │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def request(self, url, method, driver_callback=None):
+        """ Performs an HTTP request on a Target object """
+
+        # Initialize target object from URL
+        target = Target(url=url, yanker=self)
+
+        # Handle case of GET
+        if method == _c.GET:
+
+            # Call GET method on target
+            target.get(driver_callback=driver_callback)
+
+        # Return target
+        return target
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET                                                                            │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def get(self, url, driver_callback=None):
+        """ Performs an HTTP GET request on a Target object """
+
+        # Make GET request and return target
+        return self.request(url, method=_c.GET, driver_callback=driver_callback)
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CLOSE DRIVER                                                                   │
@@ -347,7 +388,7 @@ class Yanker:
                 # └────────────────────────────────────────────────────────────────────┘
 
                 # Get target object from tarket URL
-                target = self.pliers.get(target, driver_callback=driver_callback)
+                target = self.get(target, driver_callback=driver_callback)
 
                 # Get result
                 result = method(target, *args, *kwargs)

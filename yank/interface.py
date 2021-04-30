@@ -78,6 +78,7 @@ class Interface:
         if value_type is list:
 
             # Return a comma separated list
+            # Currently no support for array structures in database
             return "; ".join([str(i).replace(";", ",") for i in value])
 
         # Get to type

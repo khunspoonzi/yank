@@ -34,7 +34,7 @@ class Target:
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, url, pliers):
+    def __init__(self, url, yanker):
         """ Init Method """
 
         # Set URL
@@ -46,17 +46,17 @@ class Target:
         # Set base URL
         self.url_base = f"{url_parsed.scheme}://{url_parsed.netloc}"
 
-        # Set pliers
-        self.pliers = pliers
+        # Set yanker
+        self.yanker = yanker
 
         # Set requester
-        self.requester = self.pliers.requester
+        self.requester = self.yanker.requester
+
+        # Set browser
+        self.browser = self.yanker.browser
 
         # Set driver
-        self.driver = self.pliers.driver
-
-        # Set yanker
-        self.yanker = pliers.yanker
+        self.driver = self.browser.driver if self.browser else None
 
         # Initialize requests
         self.requests = []
@@ -142,7 +142,7 @@ class Target:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def get(self, driver_callback=None):
-        """ Performs an HTTP GET request to the page using its pliers' requester """
+        """ Performs an HTTP GET request to the page using its yanker's requester """
 
         # Get URL
         url = self.url
@@ -175,7 +175,7 @@ class Target:
                 if getattr(driver_callback, "has_stop_when", False):
 
                     # Get quick driver
-                    driver_quick = self.pliers.driver_quick
+                    driver_quick = self.browser.driver_quick
 
                     # Copy cookies from driver to quick driver
 
@@ -252,7 +252,7 @@ class Target:
                         break
 
             # Check if mode is session
-            if self.pliers.mode == _c.SESSION:
+            if self.yanker.mode == _c.SESSION:
 
                 # Get driver user agent
                 driver_user_agent = driver.execute_script("return navigator.userAgent;")
@@ -284,13 +284,13 @@ class Target:
             # Initialize request kwargs
             request_kwargs = {}
 
-            # Check if pliers mode is transient
-            if self.pliers.mode == _c.TRANSIENT:
+            # Check if yanker mode is transient
+            if self.yanker.mode == _c.TRANSIENT:
 
                 # TODO: Implement a dynamic get headers method for users to customize
 
                 # Add default headers to request kwargs
-                request_kwargs[_c.HEADERS] = self.pliers.yanker.default_headers
+                request_kwargs[_c.HEADERS] = self.yanker.default_headers
 
             # Make an HTTP request
             response = self.requester.get(url, **request_kwargs)
