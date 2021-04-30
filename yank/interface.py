@@ -71,6 +71,15 @@ class Interface:
                 # Return the value
                 return value
 
+        # Get value type
+        value_type = type(value)
+
+        # Check if value is a list
+        if value_type is list:
+
+            # Return a comma separated list
+            return "; ".join([str(i).replace(";", ",") for i in value])
+
         # Get to type
         to_type = field_map[field][self.TYPE]
 
@@ -78,16 +87,16 @@ class Interface:
         if to_type is int:
 
             # Check if value is str
-            if type(value) is str:
+            if value_type is str:
 
                 # Remove common unwanted characters
                 value = value.replace(",", "")
 
         # Handle case of datetime
-        if to_type is datetime:
+        elif to_type is datetime:
 
             # Assert value is datetime
-            assert type(value) is datetime, f"{field} is not a valid datetime"
+            assert value_type is datetime, f"{field} is not a valid datetime"
 
         # Handle normal case
         else:
