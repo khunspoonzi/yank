@@ -5,6 +5,7 @@
 import arrow
 import copy
 import inspect
+import re
 import requests
 import urllib.parse
 
@@ -40,7 +41,9 @@ class Yanker:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     # TODO: Enforce transience in the case of driver (new driver each time)
-    # TODO: Work on driverless CloudFlare support
+    # TODO: Implement session transfer from requester to driver (not done yet)
+    # TODO: Auto set driver mode to quick if all yank methods have a driver method with
+    #       a stop when decorator
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -82,8 +85,8 @@ class Yanker:
     # Initialize driver headless to True
     driver_headless = True
 
-    # Define DB name
-    db_name = "yanker"
+    # Initialize database name to None
+    db_name = None
 
     # Initialize Browser class so that users can easily access its constants
     Browser = Browser
@@ -129,6 +132,15 @@ class Yanker:
 
         # Set database name
         self.db_name = db_name or self.db_name
+
+        # Check if database name is None
+        if self.db_name is None:
+
+            # Get class name
+            class_name = self.__class__.__name__
+
+            # Set database name as snake case version of class name
+            self.db_name = re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
 
         # Initialize database engine
         self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
