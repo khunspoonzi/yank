@@ -260,8 +260,8 @@ class Yanker:
         driver_quick = browser and browser._driver_quick
 
         # Close drivers
-        driver and driver.close()
-        driver_quick and driver_quick.close()
+        driver and driver.quit()
+        driver_quick and driver_quick.quit()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ URLJOIN                                                                        │
