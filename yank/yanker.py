@@ -50,6 +50,7 @@ class Yanker:
     # │ PENDING FEATURES                                                               │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
+    # TODO: Implement a dynamic get headers method for users to customize
     # TODO: Enforce transience in the case of driver (new driver each time)
     # TODO: Implement session transfer from requester to driver (not done yet)
     # TODO: Auto set driver mode to quick if all yank methods have a driver method with
@@ -134,8 +135,6 @@ class Yanker:
 
             # Set default headers
             self.requester.headers.update(self.default_headers)
-
-            # TODO: Implement a dynamic get headers method for users to customizet
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ DATABASE                                                                   │
@@ -564,9 +563,6 @@ class Yanker:
 
             # Define wrapper
             def wrapper(instance, target, *args, **kwargs):
-
-                print("---------------")
-                print(instance.db_session.query(interface._Item).count())
 
                 # Set interface on target
                 target.interface = interface
