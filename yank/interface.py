@@ -9,21 +9,12 @@ from datetime import datetime
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 from sqlalchemy import Column, DateTime, Float, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 import yank.constants as _c
-
-
-# ┌────────────────────────────────────────────────────────────────────────────────────┐
-# │ DATABASE                                                                           │
-# └────────────────────────────────────────────────────────────────────────────────────┘
-
-# Initialize base class
-Base = declarative_base()
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -56,14 +47,11 @@ class Interface:
         datetime: DateTime,
     }
 
-    # Set base
-    Base = Base
-
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, db_table_name, **kwargs):
+    def __init__(self, DBBase, db_table_name, **kwargs):
         """ Init Method """
 
         # Get common constants
@@ -106,7 +94,7 @@ class Interface:
 
         # Define Item ORM class
         @columns
-        class Item(Base):
+        class Item(DBBase):
             """ The ORM class that will house the user-defined columns """
 
             # Set table name

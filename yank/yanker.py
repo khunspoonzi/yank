@@ -16,6 +16,7 @@ from functools import reduce
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -27,6 +28,14 @@ import yank.constants as _c
 from yank.browser import Browser
 from yank.interface import Interface
 from yank.target import Target
+
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ DATABASE                                                                           │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+# Initialize base class
+DBBase = declarative_base()
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -148,7 +157,7 @@ class Yanker:
         self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
 
         # Create tables
-        Interface.Base.metadata.create_all(self.db_engine)
+        DBBase.metadata.create_all(self.db_engine)
 
         # Make a database session class
         DBSession = sessionmaker(bind=self.db_engine)
@@ -551,7 +560,7 @@ class Yanker:
             db_table_name = method_name.replace("yank_", "")
 
             # Initialize an interface
-            interface = Interface(db_table_name=db_table_name, **kwargs)
+            interface = Interface(DBBase, db_table_name=db_table_name, **kwargs)
 
             # Define wrapper
             def wrapper(instance, target, *args, **kwargs):
