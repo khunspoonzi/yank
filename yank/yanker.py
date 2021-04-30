@@ -2,6 +2,7 @@
 # │ GENERAL IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
+import arrow
 import copy
 import inspect
 import urllib.parse
@@ -314,6 +315,16 @@ class Yanker:
         return elements[0].text if elements else default
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ NOW                                                                            │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def now(self):
+        """ Get a UTC timezone aware datetime now object """
+
+        # Return UTC now
+        return arrow.utcnow().datetime
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ WRAP METHODS                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -372,6 +383,16 @@ class Yanker:
 
                             # Cast value to appropriate type
                             item[field] = interface.cast(field, value)
+
+                        # Add URL to item
+                        item[_c.URL] = target.url
+
+                        # Add timestamp to item
+                        item[_c.YANKED_AT] = self.now()
+
+                    from pprint import pprint
+
+                    pprint(result)
 
                 # Return the evaluated method
                 return result
