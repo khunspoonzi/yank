@@ -5,6 +5,12 @@
 from datetime import datetime
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ SQLALCHEMY IMPORTS                                                                 │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from sqlalchemy import Column, DateTime, Float, Integer, String, Table
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -24,22 +30,30 @@ class Interface:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     # Interface
+    ID = _c.ID
     NULL = _c.NULL
     TYPE = _c.TYPE
 
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CLASS ATTRIBUTES                                                               │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    # Set database meta
-    db_meta = None
+    # Type Map
+    TYPE_MAP = {
+        str: String,
+        int: Integer,
+        float: Float,
+        datetime: DateTime,
+    }
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, **kwargs):
+    def __init__(self, db_meta, db_table_name, **kwargs):
         """ Init Method """
+
+        # Set database meta
+        self.db_meta = db_meta
+
+        # Set table name
+        self.db_table_name = db_table_name
 
         # Initialize field map from kwargs
         field_map = kwargs
@@ -48,6 +62,17 @@ class Interface:
         self.field_map = {
             k: (v if type(v) is dict else {self.TYPE: v}) for k, v in field_map.items()
         }
+
+        # Define table
+        self.table = Table(
+            self.db_table_name,
+            self.db_meta,
+            Column(self.ID, Integer, primary_key=True),
+            *[
+                Column(field, self.TYPE_MAP[info[self.TYPE]])
+                for field, info in self.field_map.items()
+            ],
+        )
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CAST                                                                           │

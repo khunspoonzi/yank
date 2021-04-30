@@ -233,7 +233,6 @@ class Browser:
     # │ STOP WHEN                                                                      │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    @staticmethod
     def stop_when(condition, timeout=10):
         """ Stops a driver from loading further when a certain condition is met """
 

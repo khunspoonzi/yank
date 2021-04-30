@@ -29,6 +29,13 @@ from yank.target import Target
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ DATABASE                                                                           │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+# Initialize a global database meta instance
+db_meta = MetaData()
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ YANKER                                                                             │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -44,6 +51,7 @@ class Yanker:
     # TODO: Implement session transfer from requester to driver (not done yet)
     # TODO: Auto set driver mode to quick if all yank methods have a driver method with
     #       a stop when decorator
+    # TODO: Allow for sharing of single interface between methods
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -145,8 +153,8 @@ class Yanker:
         # Initialize database engine
         self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
 
-        # Initialize database meta
-        self.db_meta = MetaData()
+        # Create tables
+        db_meta.create_all(self.db_engine)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ START URLS                                                                 │
@@ -378,6 +386,28 @@ class Yanker:
         return arrow.utcnow().datetime
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ TABLES                                                                         │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def tables(self):
+        """ Returns a dict of table objects in the database """
+
+        # Return tables
+        return db_meta.tables
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ TABLE NAMES                                                                    │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def table_names(self):
+        """ Returns a list of table names in the database """
+
+        # Return table names
+        return list(self.tables.keys())
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ WRAP METHODS                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -430,6 +460,10 @@ class Yanker:
 
                     # Iterate over result
                     for item in result:
+
+                        # Continue if item is None
+                        if item is None:
+                            continue
 
                         # Iterate over field-value pairs in item
                         for field, value in item.items():
@@ -504,18 +538,23 @@ class Yanker:
     # │ INTERFACE                                                                      │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    @staticmethod
     def interface(**kwargs):
         """
         Registers an interface with a yank method
         This effectively marks the method's return value to be commited to the daatabase
         """
 
-        # Initialize an interface
-        interface = Interface(**kwargs)
-
         # Define decorator
         def decorator(method):
+
+            # Get method name
+            method_name = method.__name__
+
+            # Get database table name from method name
+            db_table_name = method_name.replace("yank_", "")
+
+            # Initialize an interface
+            interface = Interface(db_meta, db_table_name=db_table_name, **kwargs)
 
             # Define wrapper
             def wrapper(instance, target, *args, **kwargs):
