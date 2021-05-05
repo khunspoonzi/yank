@@ -11,6 +11,13 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, exists, Float, func, Integer, String
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ RICH IMPORTS                                                                       │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from rich.console import Console
+from rich.table import Table
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -59,6 +66,12 @@ class Interface:
 
     # Initialize skip by URL to False
     skip_by_url = False
+
+    # Initialize display list by to None
+    display_list_by = None
+
+    # Initialize cached console to None
+    _console = None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
@@ -278,3 +291,82 @@ class Interface:
 
         # Return value
         return value
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CONSOLE                                                                        │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def console(self):
+        """ Returns a cached or newly initialized Rich console object """
+
+        # Check if console is cached
+        if self._console:
+
+            # Return cached console
+            return self._console
+
+        # Initialize a new Rich console
+        console = Console()
+
+        # Cache console
+        self._console = console
+
+        # Return console
+        return console
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DISPLAY LIST                                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def display_list(self):
+        """ Displays a list of items using a Rich Table """
+
+        # Get row count
+        row_count = self.count()
+
+        # Initialize Rich Table
+        table = Table(title=f"{self.name}: {self.db_table_name} ({row_count} rows)")
+
+        # Get display fields
+        display_fields = self.display_list_by
+
+        # Check if display fields is None
+        if not display_fields:
+
+            # Define display list by as the first n fields in the field map
+            display_fields = list(self.field_map.keys())[:5]
+
+        # Add ID to display fields
+        display_fields = ["id"] + list(display_fields)
+
+        # Initialize fields
+        fields = []
+
+        # Iterate over display fields
+        for display_field in display_fields:
+
+            # Get field and display
+            field, display = (
+                display_field
+                if type(display_field) in [list, tuple]
+                else (display_field, display_field.replace("_", " "))
+            )
+
+            # Create column
+            table.add_column(display)
+
+            # Add field to fields
+            fields.append(field)
+
+        # Get items
+        items = self.db_session.query(self.Item).all()
+
+        # Iterate over items
+        for item in items:
+
+            # Add row
+            table.add_row(*[str(getattr(item, field)) for field in fields])
+
+        # Display table of tables
+        self.console.print(table, justify="center")

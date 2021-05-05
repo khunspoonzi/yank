@@ -87,7 +87,10 @@ class Yanker:
     # Define requester
     requester = requests
 
-    # Initialize console to None
+    # Initialize Browser class so that users can easily access its constants
+    Browser = Browser
+
+    # Initialize cached console to None
     _console = None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
@@ -120,9 +123,6 @@ class Yanker:
 
     # Initialize database name to None
     db_name = None
-
-    # Initialize Browser class so that users can easily access its constants
-    Browser = Browser
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
@@ -445,7 +445,7 @@ class Yanker:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def display_tables(self):
-        """ Displays a list of tables using Rich """
+        """ Displays a list of tables using a Rich Table """
 
         # Initialize Rich Table
         table = Table(title=f"Tables: {self.db_name}")
