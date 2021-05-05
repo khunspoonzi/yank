@@ -10,7 +10,6 @@ import re
 import requests
 import urllib.parse
 
-from datetime import datetime
 from functools import reduce
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -20,6 +19,13 @@ from functools import reduce
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ RICH IMPORTS                                                                       │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from rich.console import Console
+from rich.table import Table
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -80,6 +86,9 @@ class Yanker:
 
     # Define requester
     requester = requests
+
+    # Initialize console to None
+    _console = None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CUSTOMIZABLE CLASS ATTRIBUTES                                                  │
@@ -152,6 +161,9 @@ class Yanker:
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ DATABASE                                                                   │
         # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Initialize tables to empty dict
+        self.tables = {}
 
         # Set database name
         self.db_name = db_name or self.db_name
@@ -335,22 +347,14 @@ class Yanker:
         return self.request(url, method=_c.GET, driver_callback=driver_callback)
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CLOSE DRIVER                                                                   │
+    # │ NOW                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def close_driver(self):
-        """ Closes the yanker's active driver """
+    def now(self):
+        """ Get a UTC timezone aware datetime now object """
 
-        # Get browser
-        browser = self.browser
-
-        # Get drivers
-        driver = browser and browser.driver
-        driver_quick = browser and browser._driver_quick
-
-        # Close drivers
-        driver and driver.quit()
-        driver_quick and driver_quick.quit()
+        # Return UTC now
+        return arrow.utcnow().datetime
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ URLJOIN                                                                        │
@@ -403,27 +407,6 @@ class Yanker:
         return elements[0].text if elements else default
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ NOW                                                                            │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def now(self):
-        """ Get a UTC timezone aware datetime now object """
-
-        # Return UTC now
-        return arrow.utcnow().datetime
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ TABLES                                                                         │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    @property
-    def tables(self):
-        """ Returns a dict of table objects in the database """
-
-        # Return tables
-        return DBBase.metadata.tables
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ TABLE NAMES                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -435,6 +418,81 @@ class Yanker:
         return list(self.tables.keys())
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CONSOLE                                                                        │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def console(self):
+        """ Returns a cached or newly initialized Rich console object """
+
+        # Check if console is cached
+        if self._console:
+
+            # Return cached console
+            return self._console
+
+        # Initialize a new Rich console
+        console = Console()
+
+        # Cache console
+        self._console = console
+
+        # Return console
+        return console
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DISPLAY TABLES                                                                 │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def display_tables(self):
+        """ Displays a list of tables using Rich """
+
+        # Initialize Rich Table
+        table = Table(title=f"Tables: {self.db_name}")
+
+        # Add columns
+        [
+            table.add_column(col_name)
+            for col_name in ("name", "interface", "cols", "rows")
+        ]
+
+        # Get tables
+        tables = self.tables
+
+        # Iterate over tables
+        for table_name, interface in tables.items():
+
+            # Get column count
+            col_count = str(len(interface.Item.__table__.columns))
+
+            # Get row count
+            row_count = str(interface.count())
+
+            # Add row
+            table.add_row(interface.db_table_name, interface.name, col_count, row_count)
+
+        # Display table of tables
+        self.console.print(table, justify="center")
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CLOSE DRIVER                                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def close_driver(self):
+        """ Closes the yanker's active driver """
+
+        # Get browser
+        browser = self.browser
+
+        # Get drivers
+        driver = browser and browser.driver
+        driver_quick = browser and browser._driver_quick
+
+        # Close drivers
+        driver and driver.quit()
+        driver_quick and driver_quick.quit()
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INTERFACE                                                                      │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -443,12 +501,6 @@ class Yanker:
         Registers an interface with a yank method
         This effectively marks the method's return value to be commited to the daatabase
         """
-
-        # Add URL to interface
-        kwargs[_c.URL] = str
-
-        # Add yanked at to interface
-        kwargs[_c.YANKED_AT] = datetime
 
         # Define decorator
         def decorator(method):
@@ -518,15 +570,21 @@ class Yanker:
                 db_table_name = interface.db_table_name
 
                 # Convert database table name to Pascal Case
-                db_table_name = "".join(
+                interface_name = "".join(
                     [
                         w.title() if len(w) > 2 else w.upper()
                         for w in db_table_name.split("_")
                     ]
                 )
 
+                # Set interface name
+                interface.name = interface_name
+
                 # Add interface as a "table" accessible on the yanker instance
-                setattr(self, db_table_name, interface)
+                setattr(self, interface_name, interface)
+
+                # Add interface to tables dict
+                self.tables[db_table_name] = interface
 
             # Define wrapped method
             def wrapped(target, *args, **kwargs):
@@ -559,8 +617,6 @@ class Yanker:
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ MAKE REQUEST                                                       │
                 # └────────────────────────────────────────────────────────────────────┘
-
-                print(target)
 
                 # Get target object from tarket URL
                 target = self.get(target, driver_callback=driver_callback)

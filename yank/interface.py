@@ -8,7 +8,7 @@ from datetime import datetime
 # │ SQLALCHEMY IMPORTS                                                                 │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import Column, DateTime, exists, Float, Integer, String
+from sqlalchemy import Column, DateTime, exists, Float, func, Integer, String
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -50,6 +50,9 @@ class Interface:
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CLASS ATTRIBUTES                                                               │
     # └────────────────────────────────────────────────────────────────────────────────┘
+
+    # Initialize name to empty string
+    name = ""
 
     # Initialize database session
     db_session = None
@@ -122,6 +125,8 @@ class Interface:
             # Set ID as primary key
             id = Column(Integer, primary_key=True)
 
+            # NOTE: URL and yanked at are set above in the field map
+
         # Set Item class on interface object
         self.Item = Item
 
@@ -133,14 +138,36 @@ class Interface:
         """ A creates a new Item using the SQLAlchemy ORM Item class """
 
         # Cast the item fields spplied as kawrgs and return an initialized Item object
-        return self.Item(**self.cast_item(kwargs))
+        return self.Item(**self.cast_fields(kwargs))
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ COUNT                                                                          │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def count(self):
+        """ Returns a count of items in the database """
+
+        # Return count
+        return self.db_session.query(func.count(self.Item.id)).scalar()
+
+        """
+        For more info on counting with SQL Alchemy:
+
+        https://stackoverflow.com/questions/10822635/get-the-number-of-rows-in-table-
+        using-sqlalchemy
+
+        https://stackoverflow.com/questions/14754994/why-is-sqlalchemy-count-much-slower
+        -than-the-raw-query
+        """
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ EXISTS                                                                         │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def exists(self, **kwargs):
-        """ Returns a boolean of whether an item by the filter kwargs exists """
+        """
+        Returns a boolean of whether an item by the filter kwargs exists in the database
+        """
 
         # Get Item
         Item = self.Item
@@ -157,10 +184,32 @@ class Interface:
         ).scalar()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CAST DICT                                                                      │
+    # │ ALL                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def cast_item(self, item_dict):
+    def all(self):
+        """ Returns a queryset of all items in the database """
+
+        # Return a queryset of all items
+        return self.db_session.query(self.Item).all()
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ FILTER                                                                         │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def filter(self, **kwargs):
+        """
+        Returns a filtered queryset of items in the database by the provided kwargs
+        """
+
+        # Return filtered queryset
+        return self.db_session.query(self.Item).filter_by(**kwargs)
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CAST FIELDS                                                                    │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def cast_fields(self, item_dict):
         """ Casts a dict of item fields according to a the interface's field map """
 
         # Cast item dict
