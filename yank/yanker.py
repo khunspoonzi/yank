@@ -4,6 +4,7 @@
 
 import arrow
 import copy
+import inflect
 import inspect
 import re
 import requests
@@ -32,12 +33,17 @@ from yank.target import Target
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ INFLECT                                                                            │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+inflect_engine = inflect.engine()
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ DATABASE                                                                           │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 # Initialize base class
 DBBase = declarative_base()
-
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ YANKER                                                                             │
@@ -57,6 +63,8 @@ class Yanker:
     # TODO: Auto set driver mode to quick if all yank methods have a driver method with
     #       a stop when decorator
     # TODO: Allow for sharing of single interface between methods
+    # TODO: Implement skip by URL as a standalone decorator
+    # TODO: Implement a delay feature for throttling
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -413,8 +421,7 @@ class Yanker:
         """ Returns a dict of table objects in the database """
 
         # Return tables
-        return []
-        # return db_meta.tables
+        return DBBase.metadata.tables
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ TABLE NAMES                                                                    │
@@ -451,6 +458,12 @@ class Yanker:
 
             # Get database table name from method name
             db_table_name = method_name.replace("yank_", "")
+
+            # Convert database table name to singular form
+            db_table_name = inflect_engine.singular_noun(db_table_name) or db_table_name
+
+            # Convert database table name to lower- snake-case
+            db_table_name = db_table_name.lower().replace(" ", "")
 
             # Initialize an interface
             interface = Interface(DBBase, db_table_name=db_table_name, **kwargs)
@@ -501,6 +514,20 @@ class Yanker:
                 # Add instance session to interface
                 interface.db_session = self.db_session
 
+                # Get database table name
+                db_table_name = interface.db_table_name
+
+                # Convert database table name to Pascal Case
+                db_table_name = "".join(
+                    [
+                        w.title() if len(w) > 2 else w.upper()
+                        for w in db_table_name.split("_")
+                    ]
+                )
+
+                # Add interface as a "table" accessible on the yanker instance
+                setattr(self, db_table_name, interface)
+
             # Define wrapped method
             def wrapped(target, *args, **kwargs):
 
@@ -532,6 +559,8 @@ class Yanker:
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ MAKE REQUEST                                                       │
                 # └────────────────────────────────────────────────────────────────────┘
+
+                print(target)
 
                 # Get target object from tarket URL
                 target = self.get(target, driver_callback=driver_callback)
