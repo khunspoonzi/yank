@@ -8,7 +8,10 @@ import os
 # │ SELENIUM IMPORTS                                                                   │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from seleniumwire import webdriver
+import undetected_chromedriver.v2 as uc
+
+from selenium import webdriver
+from seleniumwire import webdriver as webdriver_wire
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
@@ -58,7 +61,9 @@ class Browser:
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, slug, driver_mode=NORMAL, driver_headless=False):
+    def __init__(
+        self, slug, driver_mode=NORMAL, driver_headless=False, driver_requests=False
+    ):
         """ Init Method """
 
         # Get driver modes
@@ -96,6 +101,9 @@ class Browser:
 
         # Set driver headless boolean
         self.driver_headless = driver_headless
+
+        # Set driver requests boolean
+        self.driver_requests = driver_requests
 
         # Initialize and set driver
         self.driver = self.initialize_driver(slug, driver_mode, driver_headless)
@@ -166,12 +174,25 @@ class Browser:
             # Set page load strategy to None
             desired_capabilities.update(desired_capability_args)
 
-            # Initialize a Firefox driver
-            driver = webdriver.Firefox(
-                executable_path=GeckoDriverManager().install(),
-                options=options,
-                desired_capabilities=desired_capabilities,
-            )
+            # Handle case of Selenium Wire (driver_requests == True)
+            if self.driver_requests:
+
+                # Initialize a Firefox driver
+                driver = webdriver_wire.Firefox(
+                    executable_path=GeckoDriverManager().install(),
+                    options=options,
+                    desired_capabilities=desired_capabilities,
+                )
+
+            # Otherwise handle case of normal webdriver
+            else:
+
+                # Initialize a Firefox driver
+                driver = webdriver.Firefox(
+                    executable_path=GeckoDriverManager().install(),
+                    options=options,
+                    desired_capabilities=desired_capabilities,
+                )
 
         # Otherwise handle default case
         else:
@@ -204,13 +225,30 @@ class Browser:
                 # Add Chrome type to kwargs
                 driver_kwargs["chrome_type"] = ChromeType.CHROMIUM
 
-            # Initialize a Chrome driver
-            driver = webdriver.Chrome(
-                executable_path=ChromeDriverManager().install(),
-                options=options,
-                desired_capabilities=desired_capabilities,
-                **driver_kwargs,
-            )
+            # Handle case of Selenium Wire (driver_requests == True)
+            if self.driver_requests:
+
+                # Initialize a Chrome driver
+                driver = webdriver_wire.Chrome(
+                    executable_path=ChromeDriverManager().install(),
+                    options=options,
+                    desired_capabilities=desired_capabilities,
+                    **driver_kwargs,
+                )
+
+            # Otherwise handle case of normal webdriver
+            else:
+
+                # Initialize a Chrome driver
+                driver = uc.Chrome(
+                    executable_path=ChromeDriverManager().install(),
+                    options=options,
+                    desired_capabilities=desired_capabilities,
+                    **driver_kwargs,
+                )
+
+            # NOTE: We only use Selenium Wire when we want to capture HTTP requests
+            # because Selenium Wire has a higher chance of getting blocked in some cases
 
             # Check if headless is True
             if driver_headless:

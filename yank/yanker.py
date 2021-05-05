@@ -94,8 +94,11 @@ class Yanker:
     # Initialize driver mode to normal
     driver_mode = Browser.NORMAL
 
-    # Initialize driver headless to True
-    driver_headless = True
+    # Initialize driver headless to False
+    driver_headless = False
+
+    # Initialize driver requests to False
+    driver_requests = False
 
     # Initialize database name to None
     db_name = None
@@ -116,6 +119,7 @@ class Yanker:
         default_browser="",
         driver_mode=None,
         driver_headless=None,
+        driver_requests=None,
         db_name=None,
     ):
         """ Init Method """
@@ -233,11 +237,17 @@ class Yanker:
                 driver_headless if driver_headless is not None else self.driver_headless
             )
 
+            # Get driver requests
+            driver_requests = (
+                driver_requests if driver_requests is not None else self.driver_requests
+            )
+
             # Initialize and set browser
             self.browser = Browser(
                 default_browser,
                 driver_mode=driver_mode,
                 driver_headless=driver_headless,
+                driver_requests=driver_requests,
             )
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
