@@ -8,8 +8,6 @@ import os
 # │ SELENIUM IMPORTS                                                                   │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-import undetected_chromedriver.v2 as uc
-
 from selenium import webdriver
 from seleniumwire import webdriver as webdriver_wire
 from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -240,12 +238,15 @@ class Browser:
             else:
 
                 # Initialize a Chrome driver
-                driver = uc.Chrome(
+                driver = webdriver.Chrome(
                     executable_path=ChromeDriverManager().install(),
                     options=options,
                     desired_capabilities=desired_capabilities,
                     **driver_kwargs,
                 )
+
+                # Initialize driver requests to an empty list
+                driver.requests = []
 
             # NOTE: We only use Selenium Wire when we want to capture HTTP requests
             # because Selenium Wire has a higher chance of getting blocked in some cases

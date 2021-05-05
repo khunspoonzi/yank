@@ -8,7 +8,7 @@ from datetime import datetime
 # │ SQLALCHEMY IMPORTS                                                                 │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy import Column, DateTime, exists, Float, Integer, String
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -48,6 +48,16 @@ class Interface:
     }
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ CLASS ATTRIBUTES                                                               │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    # Initialize database session
+    db_session = None
+
+    # Initialize skip by URL to False
+    skip_by_url = False
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -61,8 +71,17 @@ class Interface:
         # Set table name
         self.db_table_name = db_table_name
 
+        # Get attributes
+        attributes = {k: v for k, v in kwargs.items() if k.startswith("__")}
+
+        # Iterate over attributes
+        for k, v in attributes.items():
+
+            # Set attribute
+            setattr(self, k.replace("__", "", 1).strip(), v)
+
         # Initialize field map from kwargs
-        field_map = kwargs
+        field_map = {k: v for k, v in kwargs.items() if k not in attributes}
 
         # Add yanked at and URL to field map
         field_map[self.URL] = str
@@ -104,17 +123,38 @@ class Interface:
             id = Column(Integer, primary_key=True)
 
         # Set Item class on interface object
-        self._Item = Item
+        self.Item = Item
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ ITEM                                                                           │
+    # │ NEW                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def Item(self, **kwargs):
-        """ An Item constructor that wraps the SQLAlchemy ORM Item class """
+    def new(self, **kwargs):
+        """ A creates a new Item using the SQLAlchemy ORM Item class """
 
         # Cast the item fields spplied as kawrgs and return an initialized Item object
-        return self._Item(**self.cast_item(kwargs))
+        return self.Item(**self.cast_item(kwargs))
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ EXISTS                                                                         │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def exists(self, **kwargs):
+        """ Returns a boolean of whether an item by the filter kwargs exists """
+
+        # Get Item
+        Item = self.Item
+
+        # Convert field names to field objects
+        kwargs = {getattr(Item, field, None): value for field, value in kwargs.items()}
+
+        # Remove null fields
+        kwargs = {k: v for k, v in kwargs.items() if k}
+
+        # Return boolean of whether or not the object exists
+        return self.db_session.query(
+            exists().where(*[k == v for k, v in kwargs.items()])
+        ).scalar()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CAST DICT                                                                      │

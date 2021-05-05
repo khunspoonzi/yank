@@ -9,6 +9,7 @@ import re
 import requests
 import urllib.parse
 
+from datetime import datetime
 from functools import reduce
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -427,6 +428,52 @@ class Yanker:
         return list(self.tables.keys())
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ INTERFACE                                                                      │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def interface(**kwargs):
+        """
+        Registers an interface with a yank method
+        This effectively marks the method's return value to be commited to the daatabase
+        """
+
+        # Add URL to interface
+        kwargs[_c.URL] = str
+
+        # Add yanked at to interface
+        kwargs[_c.YANKED_AT] = datetime
+
+        # Define decorator
+        def decorator(method):
+
+            # Get method name
+            method_name = method.__name__
+
+            # Get database table name from method name
+            db_table_name = method_name.replace("yank_", "")
+
+            # Initialize an interface
+            interface = Interface(DBBase, db_table_name=db_table_name, **kwargs)
+
+            # Define wrapper
+            def wrapper(instance, target, *args, **kwargs):
+
+                # Set interface on target
+                target.interface = interface
+
+                # Execute original method
+                return method(instance, target, *args, **kwargs)
+
+            # Add the interface as an attribute on the wrapped method
+            wrapper.interface = interface
+
+            # Return wrapper
+            return wrapper
+
+        # Return the decorator
+        return decorator
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ WRAP METHODS                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -441,8 +488,46 @@ class Yanker:
         def wrapper(method, driver_callback, clean_callback):
             """ Wraps a yank method to handle user-defined class logic """
 
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ GET INTERFACE                                                          │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Get interface from method if it exists
+            interface = getattr(method, "interface", None)
+
+            # Check if interface is not null
+            if interface:
+
+                # Add instance session to interface
+                interface.db_session = self.db_session
+
             # Define wrapped method
             def wrapped(target, *args, **kwargs):
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ PRE-REQUEST FILTERS                                                │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Get interface from method if it exists
+                interface = getattr(method, "interface", None)
+
+                # Check if interface is not null
+                if interface:
+
+                    # Get skip by URL boolean
+                    skip_by_url = interface.skip_by_url
+
+                    # Check if should skip by URL
+                    if skip_by_url:
+
+                        # Return None if item with target URL exists
+                        if interface.exists(url=target):
+                            return None
+
+                # Otherwise handle case of method decorator
+                else:
+
+                    pass
 
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ MAKE REQUEST                                                       │
@@ -491,7 +576,7 @@ class Yanker:
                         item[_c.YANKED_AT] = self.now()
 
                         # Convert to ORM item
-                        item = interface.Item(**item)
+                        item = interface.new(**item)
 
                         self.db_session.add(item)
                         self.db_session.commit()
@@ -548,40 +633,3 @@ class Yanker:
 
         # Return has driver callback
         return has_driver_callback
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ INTERFACE                                                                      │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def interface(**kwargs):
-        """
-        Registers an interface with a yank method
-        This effectively marks the method's return value to be commited to the daatabase
-        """
-
-        # Define decorator
-        def decorator(method):
-
-            # Get method name
-            method_name = method.__name__
-
-            # Get database table name from method name
-            db_table_name = method_name.replace("yank_", "")
-
-            # Initialize an interface
-            interface = Interface(DBBase, db_table_name=db_table_name, **kwargs)
-
-            # Define wrapper
-            def wrapper(instance, target, *args, **kwargs):
-
-                # Set interface on target
-                target.interface = interface
-
-                # Execute original method
-                return method(instance, target, *args, **kwargs)
-
-            # Return wrapper
-            return wrapper
-
-        # Return the decorator
-        return decorator
