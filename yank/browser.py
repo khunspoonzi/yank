@@ -103,11 +103,39 @@ class Browser:
         # Set driver requests boolean
         self.driver_requests = driver_requests
 
-        # Initialize and set driver
-        self.driver = self.initialize_driver(slug, driver_mode, driver_headless)
+        # Initialize driver cache
+        self._driver = None
 
         # Initialize quick driver cache
         self._driver_quick = None
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DRIVER                                                                         │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def driver(self):
+        """ Returns an initialized or cached Selenium webdriver instance """
+
+        # NOTE: Driver is cached so we don't initialize a webdriver instance if the
+        # initialized yanker doesn't need it
+
+        # Check if driver is cached
+        if self._driver:
+
+            # Return cached driver
+            return self._driver
+
+        # Initialize a new driver
+        driver = self.initialize_driver(
+            self.slug, self.driver_mode, self.driver_headless
+        )
+
+        # Cache driver
+        self._driver = driver
+
+        # Return driver
+        return driver
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ DRIVER QUICK                                                                   │
