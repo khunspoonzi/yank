@@ -6,8 +6,10 @@ import arrow
 import copy
 import inflect
 import inspect
+import random
 import re
 import requests
+import time
 import urllib.parse
 
 from functools import reduce
@@ -70,7 +72,6 @@ class Yanker:
     #       a stop when decorator
     # TODO: Allow for sharing of single interface between methods
     # TODO: Implement skip by URL as a standalone decorator
-    # TODO: Implement a delay feature for throttling
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -102,6 +103,9 @@ class Yanker:
 
     # Initialize start URLs to None
     start_urls = None
+
+    # Initialize throttle to None
+    throttle_ms = None
 
     # Initialize auto headers to False
     auto_headers = False
@@ -617,6 +621,18 @@ class Yanker:
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ MAKE REQUEST                                                       │
                 # └────────────────────────────────────────────────────────────────────┘
+
+                # Get throttle ms
+                throttle_ms = self.throttle_ms
+
+                # Check if throttle ms is a list or tuple
+                if type(throttle_ms) in [list, tuple]:
+
+                    # Generate a random integer between min and max
+                    throttle_ms = random.randint(min(throttle_ms), max(throttle_ms))
+
+                # Implement sleep to throttle the request
+                time.sleep(throttle_ms / 1000)
 
                 # Get target object from tarket URL
                 target = self.get(target, driver_callback=driver_callback)
