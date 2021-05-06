@@ -15,6 +15,8 @@ from sqlalchemy import Column, DateTime, exists, Float, func, Integer, String
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 from rich.console import Console
+from rich.live import Live
+from rich.padding import Padding
 from rich.table import Table
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -37,9 +39,9 @@ class Interface:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     # Interface
+    CAST = _c.CAST
     DISPLAY = _c.DISPLAY
     NULL = _c.NULL
-    TYPE = _c.TYPE
     UNIQUE = _c.UNIQUE
 
     # Fields
@@ -88,8 +90,8 @@ class Interface:
         """ Init Method """
 
         # Get common constants
+        CAST = self.CAST
         DISPLAY = self.DISPLAY
-        TYPE = self.TYPE
         UNIQUE = self.UNIQUE
 
         # Set table name
@@ -108,12 +110,12 @@ class Interface:
         field_map = {k: v for k, v in kwargs.items() if k not in attributes}
 
         # Add yanked at and URL to field map
-        field_map[self.URL] = {TYPE: str, DISPLAY: "URL"}
+        field_map[self.URL] = {CAST: str, DISPLAY: "URL"}
         field_map[self.YANKED_AT] = datetime
 
         # Normalize the structure of the field map
         self.field_map = {
-            k: (v if type(v) is dict else {TYPE: v}) for k, v in field_map.items()
+            k: (v if type(v) is dict else {CAST: v}) for k, v in field_map.items()
         }
 
         # Iterate over field map
@@ -132,7 +134,7 @@ class Interface:
             for field, info in self.field_map.items():
 
                 # Get column type
-                ColType = self.TYPE_MAP[info[TYPE]]
+                ColType = self.TYPE_MAP[info[CAST]]
 
                 # Get unique
                 unique = info.get(UNIQUE, False)
@@ -282,7 +284,7 @@ class Interface:
             return "; ".join([str(i).replace(";", ",") for i in value])
 
         # Get to type
-        to_type = field_map[field][self.TYPE]
+        to_type = field_map[field][self.CAST]
 
         # Check if to type is int
         if to_type is int:
@@ -332,17 +334,31 @@ class Interface:
         return console
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ DISPLAY LIST                                                                   │
+    # │ GET LIST RENDERABLE                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def display_list(self):
-        """ Displays a list of items using a Rich Table """
+    def get_list_renderable(self, interactive=False, limit=None, offset=0):
+        """ Returns a Rich table renderable for the interface list view """
 
         # Get row count
         row_count = self.count()
 
-        # Initialize Rich Table
-        table = Table(title=f"{self.name}: {self.db_table_name} ({row_count} rows)")
+        # Initialize Rich Table as renderable
+        renderable = Table(
+            title=f"{self.name}: {self.db_table_name} ({row_count} rows)"
+        )
+
+        # Check if interactive
+        if interactive:
+
+            # Set caption
+            renderable.caption = (
+                "': Next page "
+                ";: Previous page\n"
+                "l\[imit] <int>: Sets the number of rows per page\n"  # noqa
+                "s\[ort] <field>,<-field>: Sorts rows by field(s)\n"  # noqa
+                "d\[etail] <id>: Displays a row in detail view"  # noqa
+            )
 
         # Get display fields
         display_fields = self.display_list_by
@@ -370,19 +386,110 @@ class Interface:
             )
 
             # Create column
-            table.add_column(display)
+            renderable.add_column(display)
 
             # Add field to fields
             fields.append(field)
 
         # Get items
-        items = self.db_session.query(self.Item).all()
+        items = self.db_session.query(self.Item)
+
+        # Check if limit is not null
+        if limit:
+
+            # Limit items
+            items = items.offset(offset).limit(limit)
+
+        # Apply filter to items
+        items = items.all()
 
         # Iterate over items
         for item in items:
 
             # Add row
-            table.add_row(*[str(getattr(item, field)) for field in fields])
+            renderable.add_row(*[str(getattr(item, field)) for field in fields])
 
-        # Display table of tables
-        self.console.print(table, justify="center")
+        # Pad renderable
+        renderable = Padding(renderable, (1, 1))
+
+        # Return renderable
+        return renderable
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DISPLAY LIST                                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def display_list(self, interactive=False, limit=20, offset=0, return_callback=None):
+        """ Displays a list of items using a Rich Table """
+
+        # Get console
+        console = self.console
+
+        # Check if not interactive
+        if not interactive:
+
+            # Get list renderable
+            renderable = self.get_list_renderable()
+
+            # Print renderable list view and return
+            console.print(renderable, justify="center")
+            return
+
+        # Get renderable
+        renderable = self.get_list_renderable(
+            interactive=interactive, limit=limit, offset=offset
+        )
+
+        # Clear console
+        console.clear()
+
+        # Print renderable list view and return
+        console.print(renderable, justify="center")
+
+        # Initialize while loop
+        while True:
+
+            # Get command
+            command = console.input(_c.INPUT_TAG)
+
+            # Break if command is null
+            if not command:
+                break
+
+            # Handle case of next page
+            if command == "'":
+
+                # Increment offset by limit
+                offset += limit
+
+            # Otherwise handle case of previous page
+            elif command == ";":
+
+                # Decrement offset by limit
+                offset = max(offset - limit, 0)
+
+            # Otherwise handle more complex commands
+            else:
+
+                # Otherwise handle case of limit
+                if command in ["l", "limit"]:
+
+                    # Reset offset to 0
+                    offset = 0
+
+            # Get renderable
+            renderable = self.get_list_renderable(
+                interactive=interactive, limit=limit, offset=offset
+            )
+
+            # Clear console
+            console.clear()
+
+            # Print renderable list view and return
+            console.print(renderable, justify="center")
+
+        # Check if return callback is not null
+        if return_callback:
+
+            # Call return callback
+            return_callback()
