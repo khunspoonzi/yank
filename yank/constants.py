@@ -1,5 +1,6 @@
 CHROME = "chrome"
 CHROMIUM = "chromium"
+DISPLAY = "display"
 EAGER = "eager"
 FIREFOX = "firefox"
 GET = "get"

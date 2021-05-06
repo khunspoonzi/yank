@@ -486,6 +486,46 @@ class Yanker:
         self.console.print(table, justify="center")
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DISPLAY TABLE                                                                  │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def display_table(self, name):
+        """ Displays a list of columns of a tables using a Rich Table """
+
+        # Initialize Rich Table
+        table = Table(title=f"Table: {name}")
+
+        # Add columns
+        [
+            table.add_column(col_name)
+            for col_name in ("field", "display", "cast", "type")
+        ]
+
+        # Get interface
+        interface = self.tables.get(name)
+
+        # Return if interface is null
+        if not interface:
+            return
+
+        # Get field map
+        field_map = interface.field_map
+
+        # Iterate over field map
+        for field, info in field_map.items():
+
+            # Get cast
+            cast = info[_c.TYPE]
+
+            # Add row
+            table.add_row(
+                field, info[interface.DISPLAY], str(cast), str(interface.TYPE_MAP[cast])
+            )
+
+        # Display table of tables
+        self.console.print(table, justify="center")
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CLOSE DRIVER                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 

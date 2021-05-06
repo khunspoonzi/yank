@@ -37,6 +37,7 @@ class Interface:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     # Interface
+    DISPLAY = _c.DISPLAY
     NULL = _c.NULL
     TYPE = _c.TYPE
     UNIQUE = _c.UNIQUE
@@ -87,6 +88,7 @@ class Interface:
         """ Init Method """
 
         # Get common constants
+        DISPLAY = self.DISPLAY
         TYPE = self.TYPE
         UNIQUE = self.UNIQUE
 
@@ -106,13 +108,21 @@ class Interface:
         field_map = {k: v for k, v in kwargs.items() if k not in attributes}
 
         # Add yanked at and URL to field map
-        field_map[self.URL] = str
+        field_map[self.URL] = {TYPE: str, DISPLAY: "URL"}
         field_map[self.YANKED_AT] = datetime
 
         # Normalize the structure of the field map
         self.field_map = {
             k: (v if type(v) is dict else {TYPE: v}) for k, v in field_map.items()
         }
+
+        # Iterate over field map
+        for field, info in self.field_map.items():
+
+            # Define display
+            info[DISPLAY] = info.get(DISPLAY) or " ".join(
+                [w.title() for w in field.split("_")]
+            )
 
         # Define columns decorator
         def columns(cls):
