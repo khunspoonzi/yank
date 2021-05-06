@@ -67,6 +67,12 @@ class Interface:
     # Initialize skip by URL to False
     skip_by_url = False
 
+    # Initialize session limit to None
+    session_limit = None
+
+    # Initialize session count to 0
+    session_count = 0
+
     # Initialize display list by to None
     display_list_by = None
 

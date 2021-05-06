@@ -36,6 +36,7 @@ from rich.table import Table
 import yank.constants as _c
 
 from yank.browser import Browser
+from yank.exceptions import SessionLimitReached
 from yank.interface import Interface
 from yank.target import Target
 
@@ -294,6 +295,12 @@ class Yanker:
 
                 # Call yank start method on start URL
                 self.yank_start(start_url)
+
+            # Except any exception
+            except SessionLimitReached:
+
+                # Pass onto end of method
+                pass
 
             # Except any exception
             except Exception:
@@ -603,6 +610,23 @@ class Yanker:
                 # Check if interface is not null
                 if interface:
 
+                    # ┌────────────────────────────────────────────────────────────────┐
+                    # │ SESSION LIMIT                                                  │
+                    # └────────────────────────────────────────────────────────────────┘
+
+                    # Get interface session limit
+                    session_limit = interface.session_limit
+
+                    # Check if interface session count has reached session limit
+                    if session_limit and interface.session_count >= session_limit:
+
+                        # Raise SessionLimitReached
+                        raise SessionLimitReached
+
+                    # ┌────────────────────────────────────────────────────────────────┐
+                    # │ SKIP BY URL                                                    │
+                    # └────────────────────────────────────────────────────────────────┘
+
                     # Get skip by URL boolean
                     skip_by_url = interface.skip_by_url
 
@@ -679,8 +703,12 @@ class Yanker:
                         # Convert to ORM item
                         item = interface.new(**item)
 
+                        # Add anc commit item to database
                         self.db_session.add(item)
                         self.db_session.commit()
+
+                        # Increment interface session count
+                        interface.session_count += 1
 
                 # Return the evaluated method
                 return result
