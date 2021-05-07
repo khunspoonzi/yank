@@ -423,8 +423,8 @@ class Interface:
         # Pad renderable
         renderable = Padding(renderable, (1, 1))
 
-        # Return renderable
-        return renderable
+        # Return renderable and row count
+        return renderable, row_count
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ DISPLAY LIST                                                                   │
@@ -447,7 +447,7 @@ class Interface:
             return
 
         # Get renderable
-        renderable = self.get_list_renderable(
+        renderable, row_count = self.get_list_renderable(
             interactive=interactive, limit=limit, offset=offset
         )
 
@@ -467,7 +467,7 @@ class Interface:
             if command == "'":
 
                 # Increment offset by limit
-                offset += limit
+                offset = offset if offset + limit >= row_count else offset + limit
 
             # Otherwise handle case of previous page
             elif command == ";":
@@ -490,8 +490,8 @@ class Interface:
                     # Reset offset to 0
                     offset = 0
 
-            # Get renderable
-            renderable = self.get_list_renderable(
+            # Get renderable and row count
+            renderable, row_count = self.get_list_renderable(
                 interactive=interactive, limit=limit, offset=offset
             )
 
