@@ -3,6 +3,7 @@
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 import math
+import re
 
 from datetime import datetime
 
@@ -79,6 +80,9 @@ class Interface:
 
     # Initialize display list by to None
     display_list_by = None
+
+    # Initialize display detail by to None
+    display_detail_by = None
 
     # Initialize cached console to None
     _console = None
@@ -362,13 +366,7 @@ class Interface:
                 renderable.title += f"\nPage {int(offset / limit) + 1} of {page_count}"
 
             # Set caption
-            renderable.caption = (
-                "': Next page "
-                ";: Previous page\n"
-                "l\[imit] <int>: Sets the number of rows per page\n"  # noqa
-                "s\[ort] <field>,<-field>: Sorts rows by field(s)\n"  # noqa
-                "d\[etail] <id>: Displays a row in detail view"  # noqa
-            )
+            renderable.caption = "c\[ommands]: Display available commands"  # noqa
 
         # Get display fields
         display_fields = self.display_list_by
@@ -426,6 +424,57 @@ class Interface:
         return renderable, row_count
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET LIST COMMANDS RENDERABLE                                                   │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def get_list_commands_renderable(self):
+        """ Returns a Rich table renderable for commands of the interface list view """
+
+        # Initialize Rich Table as renderable
+        renderable = Table(title="List View Commands")
+
+        # Add columns
+        [
+            renderable.add_column(col_name)
+            for col_name in ("#", "command", "argument", "description", "example")
+        ]
+
+        # Define commands
+        commands = (
+            ("'", "[<int>]", "Go to next \[nth] page", "' 5"),  # noqa
+            (";", "[<int>]", "Go to previous \[nth] page", "; 3"),  # noqa
+            ("l\[imit]", "<int>", "Set max number of rows per page", "l 10"),  # noqa
+            (
+                "s\[ort]",
+                "<field>[,<field>]",
+                "Sort rows by field(s)",
+                "s name,-age",
+            ),  # noqa
+            (
+                "f\[ilter]",
+                "<field>=<value>[,<field>=<value>]",
+                "Filter rows by field(s)",
+                "f name=Bob,age=24",
+            ),  # noqa
+            ("d\[etail]", "<id>", "Display a row in detail view", "d 5"),  # noqa
+            ("r\[eset]", None, "Reset sort and filter parameters", "r"),  # noqa
+        )
+
+        # Iterate over commands
+        for i, (command, arguments, description, example) in enumerate(commands):
+
+            # Add row
+            renderable.add_row(
+                str(i), command, arguments or "", description, example or ""
+            )
+
+        # Pad the renderable
+        renderable = Padding(renderable, (1, 1))
+
+        # Return renderable
+        return renderable
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ DISPLAY LIST                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -474,17 +523,44 @@ class Interface:
                 # Decrement offset by limit
                 offset = max(offset - limit, 0)
 
-            # Otherwise handle case of quit
-            elif command == "q":
+            # Otherwise handle case of reset
+            elif command in ["r", "reset"]:
+                pass
 
-                # Break
+            # Otherwise handle case of quit
+            elif command in ["q", "quit"]:
                 break
+
+            # Otherwise handle case of command
+            if command in ["c", "command", "commands"]:
+
+                # Initialize pager
+                with console.pager():
+
+                    # Get table renderable
+                    renderable = self.get_list_commands_renderable()
+
+                    # Print table renderable
+                    console.print(renderable, justify="center")
 
             # Otherwise handle more complex commands
             else:
 
+                # Get command and index
+                match = re.search(r"([a-zA-Z]+) *(.+)", command)
+
+                # Continue if match is null
+                if not match:
+                    continue
+
+                # Separate args from command
+                command, args = match.group(1).strip(), match.group(2)
+
                 # Otherwise handle case of limit
                 if command in ["l", "limit"]:
+
+                    # Set new limit
+                    limit = max(int(args), 0) if args.isdigit() else None
 
                     # Reset offset to 0
                     offset = 0

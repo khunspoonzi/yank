@@ -74,6 +74,7 @@ class Yanker:
     #       a stop when decorator
     # TODO: Allow for sharing of single interface between methods
     # TODO: Implement skip by URL as a standalone decorator
+    # TODO: Truncate list view if row count is huge
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -525,12 +526,12 @@ class Yanker:
             # Get command
             command = console.input(_c.INPUT_TAG)
 
-            # Break if command is null
-            if not command:
+            # Handle case of quit
+            if command in ["q", "quit"]:
                 break
 
             # Get command and index
-            match = re.search(r"(\w+) ?(\d+)", command)
+            match = re.search(r"(\w+) *(\d+)", command)
 
             # Continue if match is null
             if not match:
