@@ -17,7 +17,6 @@ from sqlalchemy import Column, DateTime, exists, Float, func, Integer, String
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 from rich.console import Console
-from rich.live import Live
 from rich.padding import Padding
 from rich.table import Table
 
