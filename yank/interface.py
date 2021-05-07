@@ -2,6 +2,8 @@
 # │ GENERAL IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
+import math
+
 from datetime import datetime
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -351,6 +353,15 @@ class Interface:
         # Check if interactive
         if interactive:
 
+            # Check if limit is defined
+            if limit:
+
+                # Get page count
+                page_count = math.ceil(row_count / limit)
+
+                # Add page number to title
+                renderable.title += f"\nPage {int(offset / limit) + 1} of {page_count}"
+
             # Set caption
             renderable.caption = (
                 "': Next page "
@@ -452,10 +463,6 @@ class Interface:
             # Get command
             command = console.input(_c.INPUT_TAG)
 
-            # Break if command is null
-            if not command:
-                break
-
             # Handle case of next page
             if command == "'":
 
@@ -467,6 +474,12 @@ class Interface:
 
                 # Decrement offset by limit
                 offset = max(offset - limit, 0)
+
+            # Otherwise handle case of quit
+            elif command == "q":
+
+                # Break
+                break
 
             # Otherwise handle more complex commands
             else:
