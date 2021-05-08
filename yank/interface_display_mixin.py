@@ -231,20 +231,8 @@ class InterfaceDisplayMixin:
             # Get command
             command = console.input(_c.INPUT_TAG)
 
-            # Handle case of next page
-            if command == "'":
-
-                # Increment offset by limit
-                offset = offset if offset + limit >= row_count else offset + limit
-
-            # Otherwise handle case of previous page
-            elif command == ";":
-
-                # Decrement offset by limit
-                offset = max(offset - limit, 0)
-
             # Otherwise handle case of reset
-            elif command in ["r", "reset"]:
+            if command in ["r", "reset"]:
                 pass
 
             # Otherwise handle case of quit
@@ -252,7 +240,7 @@ class InterfaceDisplayMixin:
                 break
 
             # Otherwise handle case of command
-            if command in ["c", "command", "commands"]:
+            elif command in ["c", "command", "commands"]:
 
                 # Initialize pager
                 with console.pager():
@@ -267,7 +255,7 @@ class InterfaceDisplayMixin:
             else:
 
                 # Get command and index
-                match = re.search(r"([a-zA-Z]+) *(.+)", command)
+                match = re.search(r"([a-zA-Z';]+) *(.*)", command)
 
                 # Continue if match is null
                 if not match:
@@ -276,8 +264,29 @@ class InterfaceDisplayMixin:
                 # Separate args from command
                 command, args = match.group(1).strip(), match.group(2)
 
+                # Handle case of next page
+                if command == "'":
+
+                    # Define multiplier
+                    multiplier = int(args) if args.isdigit() else 1
+
+                    # Get new offset
+                    new_offset = offset + (limit * multiplier)
+
+                    # Increment offset by limit
+                    offset = offset if new_offset >= row_count else new_offset
+
+                # Otherwise handle case of previous page
+                elif command == ";":
+
+                    # Get new offset
+                    new_offset = offset - (limit * multiplier)
+
+                    # Decrement offset by limit
+                    offset = max(new_offset, 0)
+
                 # Otherwise handle case of limit
-                if command in ["l", "limit"]:
+                elif command in ["l", "limit"]:
 
                     # Set new limit
                     limit = max(int(args), 0) if args.isdigit() else None
