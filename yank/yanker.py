@@ -75,6 +75,17 @@ class Yanker:
     # TODO: Allow for sharing of single interface between methods
     # TODO: Implement skip by URL as a standalone decorator
     # TODO: Truncate list view if row count is huge
+    # TODO: Improve list view reset to be able to choose what to reset
+
+    # TODO: Improve session limits with non-items
+    # TODO: Improve uniqueness handling
+    # TODO: Build a CSV / XLSX exporter
+    # TODO: Figure out how to share an interface between Yankers or Merger
+    # TODO: Implement a hardcoded auto header as first try
+    # TODO: Get base URL from current target
+    # TODO: Fix missing taget.response when driver requests is False
+    # TODO: Implement batches as a column in database for freelance work
+    # TODO: Implement ability to not define start URLs
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
