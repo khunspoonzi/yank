@@ -62,7 +62,9 @@ class InterfaceDisplayMixin:
     # │ GET LIST RENDERABLE                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get_list_renderable(self, interactive=False, limit=None, offset=0):
+    def get_list_renderable(
+        self, interactive=False, limit=None, offset=0, sort_by=None
+    ):
         """ Returns a Rich table renderable for the interface list view """
 
         # Get row count
@@ -103,6 +105,9 @@ class InterfaceDisplayMixin:
         # Initialize fields
         fields = []
 
+        # Initialize display map
+        display_map = {}
+
         # Iterate over display fields
         for display_field in display_fields:
 
@@ -119,17 +124,23 @@ class InterfaceDisplayMixin:
             # Add field to fields
             fields.append(field)
 
+            # Add field to display map
+            display_map[display] = field
+
         # Get items
         items = self.db_session.query(self.Item)
+
+        # Check if sort by is not null
+        if sort_by:
+
+            # Apply sort fields
+            items = self.sort(*sort_by, queryset=items, display_map=display_map)
 
         # Check if limit is not null
         if limit:
 
             # Limit items
             items = items.offset(offset).limit(limit)
-
-        # Apply filter to items
-        items = items.all()
 
         # Iterate over items
         for item in items:
@@ -198,7 +209,9 @@ class InterfaceDisplayMixin:
     # │ DISPLAY LIST                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def display_list(self, interactive=False, limit=20, offset=0, return_callback=None):
+    def display_list(
+        self, interactive=False, limit=20, offset=0, sort_by=None, return_callback=None
+    ):
         """ Displays a list of items using a Rich Table """
 
         # Get console
@@ -216,7 +229,7 @@ class InterfaceDisplayMixin:
 
         # Get renderable
         renderable, row_count = self.get_list_renderable(
-            interactive=interactive, limit=limit, offset=offset
+            interactive=interactive, limit=limit, offset=offset, sort_by=sort_by
         )
 
         # Clear console
@@ -294,9 +307,18 @@ class InterfaceDisplayMixin:
                     # Reset offset to 0
                     offset = 0
 
+                # Otherwise handle case of sort
+                elif command in ["s", "sort"]:
+
+                    # Set sort by argument
+                    sort_by = [f.strip() for f in args.split(",")]
+
             # Get renderable and row count
             renderable, row_count = self.get_list_renderable(
-                interactive=interactive, limit=limit, offset=offset
+                interactive=interactive,
+                limit=limit,
+                offset=offset,
+                sort_by=sort_by,
             )
 
             # Clear console

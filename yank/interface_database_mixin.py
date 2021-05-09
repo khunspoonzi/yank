@@ -112,3 +112,59 @@ class InterfaceDatabaseMixin:
 
         # Return filtered queryset
         return self.db_session.query(self.Item).filter_by(**kwargs)
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ SORT                                                                           │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def sort(self, *fields, queryset=None, display_map=None):
+        """ Returns a queryset of items sorted by the provided fields """
+
+        # Get Item
+        Item = self.Item
+
+        # Initialize display map
+        display_map = display_map or {}
+
+        # Initialize new fields list
+        _fields = []
+
+        # Iterate over fields
+        for field in fields:
+
+            # Initialize ascending boolean
+            ascending = True
+
+            # Check if field begins with negative sign
+            if field.startswith("-"):
+
+                # Set ascending to False
+                ascending = False
+
+                # Remove negative sign from string
+                field = field[1:]
+
+            # Get SQL Alchemy field object by field name or display
+            field = getattr(
+                Item,
+                field,
+                getattr(Item, display_map[field], None)
+                if field in display_map
+                else None,
+            )
+
+            # Continue if field is None
+            if field is None:
+                continue
+
+            # Apply sort direction to field object
+            field = field.asc() if ascending is True else field.desc()
+
+            # Add field to fields list
+            _fields.append(field)
+
+        # Get queryset
+        queryset = queryset or self.db_session.query(Item)
+
+        # Return sorted queryset
+        return queryset.order_by(*_fields)
