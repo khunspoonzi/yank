@@ -62,8 +62,14 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
     # Initialize display list by to None
     display_list_by = None
 
+    # Initialize list display map to None
+    list_display_map = None
+
     # Initialize display detail by to None
     display_detail_by = None
+
+    # Initialize detail display map to None
+    detail_display_map = None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
@@ -80,6 +86,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # Set table name
         self.db_table_name = db_table_name
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ CUSTOM ATTRIBUTES                                                          │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Get attributes
         attributes = {k: v for k, v in kwargs.items() if k.startswith("__")}
 
@@ -88,6 +98,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
             # Set attribute
             setattr(self, k.replace("__", "", 1).strip(), v)
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ FIELD MAP                                                                  │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Initialize field map from kwargs
         field_map = {k: v for k, v in kwargs.items() if k not in attributes}
@@ -101,6 +115,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             k: (v if type(v) is dict else {CAST: v}) for k, v in field_map.items()
         }
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ DEFAULT DISPLAY                                                            │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Iterate over field map
         for field, info in self.field_map.items():
 
@@ -108,6 +126,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             info[DISPLAY] = info.get(DISPLAY) or " ".join(
                 [w.title() for w in field.split("_")]
             )
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ COLUMNS                                                                    │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Define columns decorator
         def columns(cls):
@@ -128,6 +150,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             # Return the ORM class
             return cls
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ ITEM                                                                       │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Define Item ORM class
         @columns
         class Item(DBBase):
@@ -144,12 +170,73 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # Set Item class on interface object
         self.Item = Item
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ DISPLAY SETTINGS                                                           │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Initialize list display map
+        self.list_display_map = {_c.ID: _c.ID}
+
+        # Check if display list by is defined
+        if self.display_list_by:
+
+            # Iterate over display list by
+            for item in self.display_list_by:
+
+                # Initialize display
+                display = None
+
+                # Check if item is a list or tuple
+                if type(item) in (list, tuple):
+
+                    # Unpack field and display
+                    field, display = item
+
+                # Otherwise handle string
+                else:
+
+                    # Set field
+                    field = item
+
+                # Continue if field not in field map
+                if field not in self.field_map:
+                    continue
+
+                # Set display
+                display = display or self.field_map[field][_c.DISPLAY]
+
+                # Add to display map
+                self.list_display_map[display] = field
+
+        # Otherwise handle case of undefined display list by
+        else:
+
+            # Iterate over the first five items of the field map
+            for field in list(self.field_map.keys())[:5]:
+
+                # Add to display map
+                self.list_display_map[self.field_map[field][_c.DISPLAY]] = field
+
+        # Convert display list by into a dictionary
+        self.display_list_by = {v: k for k, v in self.list_display_map.items()}
+
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CAST FIELDS                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def cast_fields(self, item_dict):
+    def cast_fields(self, item_dict, display_map=None):
         """ Casts a dict of item fields according to a the interface's field map """
+
+        # Initialize display map
+        display_map = {k.lower(): v for k, v in display_map.items()} or {}
+
+        # Convert fields from display
+        item_dict = {
+            field
+            if field in self.field_map
+            else display_map.get(field.lower(), field): value
+            for field, value in item_dict.items()
+        }
 
         # Cast item dict
         item_dict = {

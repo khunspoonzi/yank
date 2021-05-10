@@ -86,6 +86,7 @@ class Yanker:
     # TODO: Fix missing taget.response when driver requests is False
     # TODO: Implement batches as a column in database for freelance work
     # TODO: Implement ability to not define start URLs
+    # TODO: Add ID to columns in display table
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │

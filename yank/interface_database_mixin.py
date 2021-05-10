@@ -105,13 +105,44 @@ class InterfaceDatabaseMixin:
     # │ FILTER                                                                         │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def filter(self, **kwargs):
+    def filter(self, queryset=None, display_map=None, **kwargs):
         """
         Returns a filtered queryset of items in the database by the provided kwargs
         """
 
+        # Get Item
+        Item = self.Item
+
+        # Get field map
+        field_map = self.field_map
+
+        # Initialize display map
+        display_map = {k.lower(): v for k, v in display_map.items()} or {}
+
+        # Initialize kwargs
+        _kwargs = {}
+
+        # Iterate over kwargs
+        for field, value in kwargs.items():
+
+            # Check if field not in field map
+            if field not in field_map:
+
+                # Get field as display
+                field = display_map.get(field.lower(), field)
+
+            # Continue if field not in field map
+            if field not in field_map:
+                continue
+
+            # Add field to kwargs
+            _kwargs[field] = value
+
+        # Get queryset
+        queryset = queryset or self.db_session.query(Item)
+
         # Return filtered queryset
-        return self.db_session.query(self.Item).filter_by(**kwargs)
+        return queryset.filter_by(**_kwargs)
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ SORT                                                                           │
@@ -124,7 +155,7 @@ class InterfaceDatabaseMixin:
         Item = self.Item
 
         # Initialize display map
-        display_map = display_map or {}
+        display_map = {k.lower(): v for k, v in display_map.items()} or {}
 
         # Initialize new fields list
         _fields = []
@@ -148,7 +179,7 @@ class InterfaceDatabaseMixin:
             field = getattr(
                 Item,
                 field,
-                getattr(Item, display_map[field], None)
+                getattr(Item, display_map[field.lower()], None)
                 if field in display_map
                 else None,
             )

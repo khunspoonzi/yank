@@ -63,12 +63,12 @@ class InterfaceDisplayMixin:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def get_list_renderable(
-        self, interactive=False, limit=None, offset=0, sort_by=None
+        self, interactive=False, limit=None, offset=0, sort_by=None, filter_by=None
     ):
         """ Returns a Rich table renderable for the interface list view """
 
         # Get row count
-        row_count = self.count()
+        row_count = self.count()  # TODO: Fix this in case of filter
 
         # Initialize Rich Table as renderable
         renderable = Table(
@@ -90,33 +90,17 @@ class InterfaceDisplayMixin:
             # Set caption
             renderable.caption = "c\[ommands]: Display available commands"  # noqa
 
+        # Get display map
+        display_map = self.list_display_map
+
         # Get display fields
         display_fields = self.display_list_by
-
-        # Check if display fields is None
-        if not display_fields:
-
-            # Define display list by as the first n fields in the field map
-            display_fields = list(self.field_map.keys())[:5]
-
-        # Add ID to display fields
-        display_fields = ["id"] + list(display_fields)
 
         # Initialize fields
         fields = []
 
-        # Initialize display map
-        display_map = {}
-
         # Iterate over display fields
-        for display_field in display_fields:
-
-            # Get field and display
-            field, display = (
-                display_field
-                if type(display_field) in [list, tuple]
-                else (display_field, display_field.replace("_", " "))
-            )
+        for field, display in display_fields.items():
 
             # Create column
             renderable.add_column(display)
@@ -124,11 +108,14 @@ class InterfaceDisplayMixin:
             # Add field to fields
             fields.append(field)
 
-            # Add field to display map
-            display_map[display] = field
-
         # Get items
         items = self.db_session.query(self.Item)
+
+        # Check if filter by is not null
+        if filter_by:
+
+            # Apply filters
+            items = self.filter(**filter_by, queryset=items, display_map=display_map)
 
         # Check if sort by is not null
         if sort_by:
@@ -210,27 +197,31 @@ class InterfaceDisplayMixin:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def display_list(
-        self, interactive=False, limit=20, offset=0, sort_by=None, return_callback=None
+        self,
+        interactive=False,
+        limit=20,
+        offset=0,
+        sort_by=None,
+        filter_by=None,
+        return_callback=None,
     ):
         """ Displays a list of items using a Rich Table """
 
-        # Get console
-        console = self.console
-
-        # Check if not interactive
-        if not interactive:
-
-            # Get list renderable
-            renderable = self.get_list_renderable()
-
-            # Print renderable list view and return
-            console.print(renderable, justify="center")
-            return
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ STATIC                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Get renderable
         renderable, row_count = self.get_list_renderable(
-            interactive=interactive, limit=limit, offset=offset, sort_by=sort_by
+            interactive=interactive,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            filter_by=filter_by,
         )
+
+        # Get console
+        console = self.console
 
         # Clear console
         console.clear()
@@ -238,11 +229,23 @@ class InterfaceDisplayMixin:
         # Print renderable list view and return
         console.print(renderable, justify="center")
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ INTERACTIVE                                                                │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Return if not interactive
+        if not interactive:
+            return
+
         # Initialize while loop
         while True:
 
             # Get command
             command = console.input(_c.INPUT_TAG)
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ BASIC COMMANDS                                                         │
+            # └────────────────────────────────────────────────────────────────────────┘
 
             # Otherwise handle case of reset
             if command in ["r", "reset"]:
@@ -264,6 +267,10 @@ class InterfaceDisplayMixin:
                     # Print table renderable
                     console.print(renderable, justify="center")
 
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ ARGUMENT COMMANDS                                                      │
+            # └────────────────────────────────────────────────────────────────────────┘
+
             # Otherwise handle more complex commands
             else:
 
@@ -277,6 +284,10 @@ class InterfaceDisplayMixin:
                 # Separate args from command
                 command, args = match.group(1).strip(), match.group(2)
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ NEXT PAGE                                                          │
+                # └────────────────────────────────────────────────────────────────────┘
+
                 # Handle case of next page
                 if command == "'":
 
@@ -289,6 +300,10 @@ class InterfaceDisplayMixin:
                     # Increment offset by limit
                     offset = offset if new_offset >= row_count else new_offset
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ PREVIOUS PAGE                                                      │
+                # └────────────────────────────────────────────────────────────────────┘
+
                 # Otherwise handle case of previous page
                 elif command == ";":
 
@@ -297,6 +312,10 @@ class InterfaceDisplayMixin:
 
                     # Decrement offset by limit
                     offset = max(new_offset, 0)
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ LIMIT                                                              │
+                # └────────────────────────────────────────────────────────────────────┘
 
                 # Otherwise handle case of limit
                 elif command in ["l", "limit"]:
@@ -307,11 +326,37 @@ class InterfaceDisplayMixin:
                     # Reset offset to 0
                     offset = 0
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ SORT                                                               │
+                # └────────────────────────────────────────────────────────────────────┘
+
                 # Otherwise handle case of sort
                 elif command in ["s", "sort"]:
 
                     # Set sort by argument
                     sort_by = [f.strip() for f in args.split(",")]
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ FILTER                                                             │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Otherwise handle case of filter
+                elif command in ["f", "filter"]:
+
+                    # Set filter by argument
+                    filter_by = [f.strip() for f in args.split(",")]
+
+                    # Convert filter by to kwargs
+                    filter_by = {f: v for f, v in [arg.split("=") for arg in filter_by]}
+
+                    # Cast values
+                    filter_by = self.cast_fields(
+                        filter_by, display_map=self.list_display_map
+                    )
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ RE-RENDER                                                              │
+            # └────────────────────────────────────────────────────────────────────────┘
 
             # Get renderable and row count
             renderable, row_count = self.get_list_renderable(
@@ -319,6 +364,7 @@ class InterfaceDisplayMixin:
                 limit=limit,
                 offset=offset,
                 sort_by=sort_by,
+                filter_by=filter_by,
             )
 
             # Clear console
@@ -326,6 +372,10 @@ class InterfaceDisplayMixin:
 
             # Print renderable list view and return
             console.print(renderable, justify="center")
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ RETURN CALLBACK                                                            │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Check if return callback is not null
         if return_callback:
