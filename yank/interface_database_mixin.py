@@ -49,6 +49,19 @@ class InterfaceDatabaseMixin:
         return self.Item(**self.cast_fields(kwargs))
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET                                                                            │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def get(self, queryset=None, **kwargs):
+        """ Gets an item from the database based in the supplied kwargs """
+
+        # Get queryset
+        queryset = queryset or self.db_session.query(self.Item)
+
+        # Return filtered queryset
+        return queryset.filter_by(**kwargs).one()
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ COUNT                                                                          │
     # └────────────────────────────────────────────────────────────────────────────────┘
 

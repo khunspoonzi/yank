@@ -157,9 +157,6 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             # Set weight
             info[WEIGHT] = weight
 
-            print(field)
-            print(weight)
-
         # Get weighted columns
         weighted_columns = {
             field: info[WEIGHT]
@@ -172,9 +169,6 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
         # Get negative weighted columns
         weighted_columns_negative = {k: v for k, v in weighted_columns.items() if v < 0}
-
-        print(weighted_columns_positive)
-        print(weighted_columns_negative)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ COLUMNS                                                                    │
@@ -195,23 +189,6 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
                 # Set class attribute
                 setattr(cls, field, Column(ColType, unique=unique))
-
-            # Get weighted columns
-            weighted_columns = {
-                field: info[WEIGHT]
-                for field, info in self.field_map.items()
-                if info[WEIGHT] is not None
-            }
-
-            # Get positive weighted columns
-            weighted_columns_positive = {
-                k: v for k, v in weighted_columns.items() if v > 0
-            }
-
-            # Get negative weighted columns
-            weighted_columns_negative = {
-                k: v for k, v in weighted_columns.items() if v < 0
-            }
 
             # Define rank
             @hybrid_property
@@ -282,7 +259,7 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         self.Item = Item
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
-        # │ DISPLAY SETTINGS                                                           │
+        # │ LIST DISPLAY SETTINGS                                                      │
         # └────────────────────────────────────────────────────────────────────────────┘
 
         # Initialize list display map
@@ -330,6 +307,92 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
         # Convert display list by into a dictionary
         self.display_list_by = {v: k for k, v in self.list_display_map.items()}
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ DETAIL DISPLAY SETTINGS                                                    │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Initialize detail display map
+        self.detail_display_map = {}
+
+        # Initialize new display detail by
+        _display_detail_by = []
+
+        # Check if display detail by is defined
+        if self.display_detail_by:
+
+            # Iterate over rows in display detail by
+            for row in self.display_detail_by:
+
+                # Initialize columns
+                cols = {}
+
+                # Iterate over columns in row
+                for col in row:
+
+                    # Initialize display
+                    display = None
+
+                    # Check if item is a list or tuple
+                    if type(col) in (list, tuple):
+
+                        # Unpack field and display
+                        field, display = col
+
+                    # Otherwise handle string
+                    else:
+
+                        # Set field
+                        field = col
+
+                    # Continue if field not in field map
+                    if field not in self.field_map:
+                        continue
+
+                    # Set display
+                    display = display or self.field_map[field][_c.DISPLAY]
+
+                    # Add column to columns
+                    cols[field] = display
+
+                    # Add to display map
+                    self.detail_display_map[display] = field
+
+                # Add columns to new display detail by
+                _display_detail_by.append(cols)
+
+        # Otherwise handle case of undefined display detail by
+        else:
+
+            # Initialize columns
+            cols = {}
+
+            # Get detail display fields as first ten fields
+            detail_display_fields = list(self.field_map.keys())[:10]
+
+            # Iterate over detail display fields
+            for i, field in enumerate(detail_display_fields):
+
+                # Get display
+                display = self.field_map[field][_c.DISPLAY]
+
+                # Add column to columns
+                cols[field] = display
+
+                # Add to display map
+                self.detail_display_map[display] = field
+
+                # Check if index is divisible by five or is last
+                if i and (i % 5 == 0 or i == len(detail_display_fields) - 1):
+
+                    # Add columns to new display detail by
+                    _display_detail_by.append(cols)
+
+                    # Reset columns
+                    cols = {}
+
+        # Redefine display detail by
+        self.display_detail_by = _display_detail_by
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CAST FIELDS                                                                    │

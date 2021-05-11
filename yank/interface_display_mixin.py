@@ -9,8 +9,10 @@ import re
 # │ RICH IMPORTS                                                                       │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from rich.console import Console
+from rich.columns import Columns
+from rich.console import Console, render_group
 from rich.padding import Padding
+from rich.panel import Panel
 from rich.table import Table
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -237,6 +239,9 @@ class InterfaceDisplayMixin:
         if not interactive:
             return
 
+        # Initialize should display detail
+        should_display_detail = False
+
         # Initialize while loop
         while True:
 
@@ -354,6 +359,22 @@ class InterfaceDisplayMixin:
                         filter_by, display_map=self.list_display_map
                     )
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ DETAIL                                                             │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Otherwise handle case of detail
+                elif command in ["d", "detail"]:
+
+                    # Get item ID
+                    item_id = int(args)
+
+                    # Set should display detail to True
+                    should_display_detail = True
+
+                    # Break here and call interface list view just before return
+                    break
+
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ RE-RENDER                                                              │
             # └────────────────────────────────────────────────────────────────────────┘
@@ -372,6 +393,106 @@ class InterfaceDisplayMixin:
 
             # Print renderable list view and return
             console.print(renderable, justify="center")
+
+        # Check if should display detail
+        if should_display_detail:
+
+            # Display interface detail view
+            self.display_detail(
+                item_id=item_id,
+                interactive=interactive,
+                return_callback=lambda: self.display_list(
+                    interactive=interactive,
+                    limit=limit,
+                    offset=offset,
+                    sort_by=sort_by,
+                    filter_by=filter_by,
+                ),
+            )
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ RETURN CALLBACK                                                            │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Check if return callback is not null
+        if return_callback:
+
+            # Call return callback
+            return_callback()
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET DETAIL RENDERABLE                                                          │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @render_group()
+    def get_detail_renderable(self, item_id):
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ GET ITEM                                                                   │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Get item by ID
+        item = self.get(id=int(item_id))
+
+        # Yield heading
+        # yield Panel(Text("BACKTEST", style="bold", justify="center"))
+
+        # Define panel kwargs
+        panel_kwargs = {"title_align": "right"}
+
+        # Get display detail by
+        display_detail_by = self.display_detail_by
+
+        # Iterate over rows in display detail by
+        for row in display_detail_by:
+
+            # Initialize columns
+            cols = []
+
+            # Iterate over columns in row
+            for field, display in row.items():
+
+                # Get value
+                value = getattr(item, field, "N/A")
+
+                # Stringify value
+                value = str(value)
+
+                # Add Panel to columns
+                cols.append(Panel(value, title=display, **panel_kwargs))
+
+            # Yield row of columns
+            yield Columns(cols, expand=True)
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DISPLAY DETAIL                                                                 │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def display_detail(
+        self,
+        item_id,
+        interactive=False,
+        return_callback=None,
+    ):
+        """ Displays an item detail view using Rich Panels """
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ STATIC                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Get detail renderable
+        renderable = self.get_detail_renderable(item_id=item_id)
+
+        # Get console
+        console = self.console
+
+        # Clear console
+        console.clear()
+
+        # Print renderable list view and return
+        console.print(renderable, justify="center")
+
+        input("temp")
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ RETURN CALLBACK                                                            │
