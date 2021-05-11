@@ -117,7 +117,9 @@ class InterfaceDatabaseMixin:
         field_map = self.field_map
 
         # Initialize display map
-        display_map = {k.lower(): v for k, v in display_map.items()} or {}
+        display_map = (
+            {k.lower(): v for k, v in display_map.items()} if display_map else {}
+        )
 
         # Initialize kwargs
         _kwargs = {}
@@ -155,7 +157,9 @@ class InterfaceDatabaseMixin:
         Item = self.Item
 
         # Initialize display map
-        display_map = {k.lower(): v for k, v in display_map.items()} or {}
+        display_map = (
+            {k.lower(): v for k, v in display_map.items()} if display_map else {}
+        )
 
         # Initialize new fields list
         _fields = []

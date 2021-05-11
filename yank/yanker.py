@@ -18,7 +18,7 @@ from functools import reduce
 # │ SQL ALCHEMY IMPORTS                                                                │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -198,6 +198,11 @@ class Yanker:
 
         # Initialize database engine
         self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
+
+        # Register exponent function with SQLite
+        @event.listens_for(self.db_engine, "connect")
+        def create_functions(dbapi_connection, connection_record):
+            dbapi_connection.create_function("pow", 2, lambda x, y: x ** y)
 
         # Create tables
         DBBase.metadata.create_all(self.db_engine)

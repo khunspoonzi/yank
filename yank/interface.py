@@ -2,13 +2,16 @@
 # │ GENERAL IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
+import math
+
 from datetime import datetime
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ SQLALCHEMY IMPORTS                                                                 │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, func, Integer
+from sqlalchemy.ext.hybrid import hybrid_property
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -36,7 +39,9 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
     CAST = _c.CAST
     DISPLAY = _c.DISPLAY
     NULL = _c.NULL
+    RANK = _c.RANK
     UNIQUE = _c.UNIQUE
+    WEIGHT = _c.WEIGHT
 
     # Fields
     ID = _c.ID
@@ -81,7 +86,9 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # Get common constants
         CAST = self.CAST
         DISPLAY = self.DISPLAY
+        RANK = self.RANK
         UNIQUE = self.UNIQUE
+        WEIGHT = self.WEIGHT
 
         # Set table name
         self.db_table_name = db_table_name
@@ -111,13 +118,21 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         field_map[self.YANKED_AT] = datetime
 
         # Normalize the structure of the field map
-        self.field_map = {
+        field_map = {
             k: (v if type(v) is dict else {CAST: v}) for k, v in field_map.items()
         }
 
+        # Set field map
+        self.field_map = field_map
+
         # ┌────────────────────────────────────────────────────────────────────────────┐
-        # │ DEFAULT DISPLAY                                                            │
+        # │ DEFAULTS                                                                   │
         # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Compute total weight
+        weight_total = sum(
+            [abs(info.get(WEIGHT, 0)) for info in self.field_map.values()]
+        )
 
         # Iterate over field map
         for field, info in self.field_map.items():
@@ -126,6 +141,40 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             info[DISPLAY] = info.get(DISPLAY) or " ".join(
                 [w.title() for w in field.split("_")]
             )
+
+            # Get weight
+            weight = info.get(WEIGHT) or None
+
+            # Determine if weight is reversed
+            weight_is_reversed = weight < 0 if weight else False
+
+            # Normalize weight according to total
+            weight = abs(weight) / weight_total if weight else None
+
+            # Reverse weight if necessary
+            weight = weight * -1 if weight_is_reversed else weight
+
+            # Set weight
+            info[WEIGHT] = weight
+
+            print(field)
+            print(weight)
+
+        # Get weighted columns
+        weighted_columns = {
+            field: info[WEIGHT]
+            for field, info in self.field_map.items()
+            if info[WEIGHT] is not None
+        }
+
+        # Get positive weighted columns
+        weighted_columns_positive = {k: v for k, v in weighted_columns.items() if v > 0}
+
+        # Get negative weighted columns
+        weighted_columns_negative = {k: v for k, v in weighted_columns.items() if v < 0}
+
+        print(weighted_columns_positive)
+        print(weighted_columns_negative)
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ COLUMNS                                                                    │
@@ -146,6 +195,68 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
                 # Set class attribute
                 setattr(cls, field, Column(ColType, unique=unique))
+
+            # Get weighted columns
+            weighted_columns = {
+                field: info[WEIGHT]
+                for field, info in self.field_map.items()
+                if info[WEIGHT] is not None
+            }
+
+            # Get positive weighted columns
+            weighted_columns_positive = {
+                k: v for k, v in weighted_columns.items() if v > 0
+            }
+
+            # Get negative weighted columns
+            weighted_columns_negative = {
+                k: v for k, v in weighted_columns.items() if v < 0
+            }
+
+            # Define rank
+            @hybrid_property
+            def rank(self):
+
+                # Get rank
+                rank = math.prod(
+                    [1]
+                    + [
+                        getattr(self, field) ** weight
+                        for field, weight in weighted_columns_positive.items()
+                    ]
+                ) / math.prod(
+                    [1]
+                    + [
+                        getattr(self, field) ** abs(weight)
+                        for field, weight in weighted_columns_negative.items()
+                    ]
+                )
+
+                # Return rank
+                return rank
+
+            # Define rank expression
+            @rank.expression
+            def rank(cls):
+
+                # Get rank
+                rank = math.prod(
+                    [1]
+                    + [
+                        func.pow(getattr(cls, field), weight)
+                        for field, weight in weighted_columns_positive.items()
+                    ]
+                ) / math.prod(
+                    [1]
+                    + [
+                        func.pow(getattr(cls, field), abs(weight))
+                        for field, weight in weighted_columns_negative.items()
+                    ]
+                )
+                return rank
+
+            # Set rank property
+            setattr(cls, RANK, rank)
 
             # Return the ORM class
             return cls
@@ -228,7 +339,9 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         """ Casts a dict of item fields according to a the interface's field map """
 
         # Initialize display map
-        display_map = {k.lower(): v for k, v in display_map.items()} or {}
+        display_map = (
+            {k.lower(): v for k, v in display_map.items()} if display_map else {}
+        )
 
         # Convert fields from display
         item_dict = {
