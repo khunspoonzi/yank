@@ -30,6 +30,9 @@ class Target:
     # Initialize interface to None
     interface = None
 
+    # Initialize cached driver
+    _driver = None
+
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
@@ -55,9 +58,6 @@ class Target:
         # Set browser
         self.browser = self.yanker.browser
 
-        # Set driver
-        self.driver = self.browser.driver if self.browser else None
-
         # Set has captcha
         self.has_captcha = False
 
@@ -66,6 +66,39 @@ class Target:
 
         # Initialize requests
         self.requests = []
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DRIVER                                                                         │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def driver(self):
+        """ Returns an initialized or cached Selenium webdriver instance """
+
+        # Get browser
+        browser = self.browser
+
+        # Return None if browser is null
+        if not self.browser:
+            return None
+
+        # NOTE: Driver is cached so we don't initialize a webdriver instance if the
+        # initialized yanker doesn't need it
+
+        # Check if driver is cached
+        if self._driver:
+
+            # Return cached driver
+            return self._driver
+
+        # Get driver from browser
+        driver = browser.driver
+
+        # Cache driver
+        self._driver = driver
+
+        # Return driver
+        return driver
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ REQUEST                                                                        │
