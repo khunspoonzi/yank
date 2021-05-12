@@ -2,7 +2,6 @@
 # │ GENERAL IMPORTS                                                                    │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-import arrow
 import copy
 import inflect
 import inspect
@@ -10,9 +9,6 @@ import random
 import re
 import requests
 import time
-import urllib.parse
-
-from functools import reduce
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ SQL ALCHEMY IMPORTS                                                                │
@@ -22,13 +18,6 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# ┌────────────────────────────────────────────────────────────────────────────────────┐
-# │ RICH IMPORTS                                                                       │
-# └────────────────────────────────────────────────────────────────────────────────────┘
-
-from rich.console import Console
-from rich.padding import Padding
-from rich.table import Table
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ PROJECT IMPORTS                                                                    │
@@ -39,14 +28,16 @@ import yank.constants as _c
 from yank.browser import Browser
 from yank.exceptions import SessionLimitReached
 from yank.interface import Interface
-from yank.target import Target
+from yank.yanker_display_mixin import YankerDisplayMixin
+from yank.yanker_util_mixin import YankerUtilMixin
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
-# │ INFLECT                                                                            │
+# │ INFLECTOR                                                                          │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-inflect_engine = inflect.engine()
+# Initialize inflector for singular / plural conversions
+inflector = inflect.engine()
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ DATABASE                                                                           │
@@ -55,12 +46,13 @@ inflect_engine = inflect.engine()
 # Initialize base class
 DBBase = declarative_base()
 
+
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ YANKER                                                                             │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 
-class Yanker:
+class Yanker(YankerDisplayMixin, YankerUtilMixin):
     """ A base class for custom Yanker classes """
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
@@ -107,9 +99,6 @@ class Yanker:
 
     # Initialize Browser class so that users can easily access its constants
     Browser = Browser
-
-    # Initialize cached console to None
-    _console = None
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CUSTOMIZABLE CLASS ATTRIBUTES                                                  │
@@ -162,6 +151,13 @@ class Yanker:
         db_name=None,
     ):
         """ Init Method """
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ INFLECTOR                                                                  │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Set inflector
+        self.inflector = inflector
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ MODE                                                                       │
@@ -352,341 +348,6 @@ class Yanker:
         raise
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ REQUEST                                                                        │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def request(self, url, method, driver_callback=None, solve_captcha_callback=None):
-        """ Performs an HTTP request on a Target object """
-
-        # Initialize target object from URL
-        target = Target(url=url, yanker=self)
-
-        # Handle case of GET
-        if method == _c.GET:
-
-            # Call GET method on target
-            target.get(
-                driver_callback=driver_callback,
-                solve_captcha_callback=solve_captcha_callback,
-            )
-
-        # Return target
-        return target
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ GET                                                                            │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def get(self, url, driver_callback=None, solve_captcha_callback=None):
-        """ Performs an HTTP GET request on a Target object """
-
-        # Make GET request and return target
-        return self.request(
-            url,
-            method=_c.GET,
-            driver_callback=driver_callback,
-            solve_captcha_callback=solve_captcha_callback,
-        )
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ NOW                                                                            │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def now(self):
-        """ Get a UTC timezone aware datetime now object """
-
-        # Return UTC now
-        return arrow.utcnow().datetime
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ URLJOIN                                                                        │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def urljoin(self, *args, params=None):
-        """ Joins a series of URL components """
-
-        # Get joined URL from the supplied components
-        url = reduce(urllib.parse.urljoin, args).rstrip("/")
-
-        # Convert params to a list of tuples
-        params = params.items() if type(params) is dict else params
-
-        # Get quote function
-        q = urllib.parse.quote_plus
-
-        # Convert params to list
-        params = [f"{q(key)}={q(val)}" for key, val in params] if params else []
-
-        # Convert params to string
-        params = "&".join(params)
-
-        # Check if params is not null
-        if params:
-
-            # Append params to url
-            url += "?" + params
-
-        # Return the joined URL
-        return url
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ GET TEXT                                                                       │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def get_text(self, element, selector, default="", many=False):
-        """ Returns the text of a selected element """
-
-        # Get elements
-        elements = element.select(selector)
-
-        # Check if many is True
-        if many:
-
-            # Return a list of values
-            return [e.text for e in elements] if elements else [default]
-
-        # Return the first value
-        return elements[0].text if elements else default
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ TABLE NAMES                                                                    │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    @property
-    def table_names(self):
-        """ Returns a list of table names in the database """
-
-        # Return table names
-        return list(self.tables.keys())
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CONSOLE                                                                        │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    @property
-    def console(self):
-        """ Returns a cached or newly initialized Rich console object """
-
-        # Check if console is cached
-        if self._console:
-
-            # Return cached console
-            return self._console
-
-        # Initialize a new Rich console
-        console = Console()
-
-        # Cache console
-        self._console = console
-
-        # Return console
-        return console
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ DISPLAY TABLES                                                                 │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def display_tables(self, interactive=False):
-        """ Displays a list of tables using a Rich Table """
-
-        # Get tables
-        tables = self.tables
-
-        # Get table count
-        table_count = len(tables)
-
-        # Initialize Rich Table as renderable
-        renderable = Table(
-            title=(
-                f"Tables: {self.db_name} "
-                f"({table_count} {inflect_engine.plural('table', table_count)})"
-            ),
-            caption=(
-                "c\[ols] <#>: Display column info\n"  # noqa
-                "r\[ows] <#>: Display available rows"  # noqa
-            ),
-        )
-
-        # Add columns
-        [
-            renderable.add_column(col_name)
-            for col_name in ("#", "name", "interface", "cols", "rows")
-        ]
-
-        # Convert tables to list of tuples
-        tables = [(name, interface) for name, interface in tables.items()]
-
-        # Iterate over tables
-        for i, (table_name, interface) in enumerate(tables):
-
-            # Get column count
-            col_count = str(len(interface.Item.__table__.columns))
-
-            # Get row count
-            row_count = str(interface.count())
-
-            # Add row
-            renderable.add_row(
-                str(i), interface.db_table_name, interface.name, col_count, row_count
-            )
-
-        # Pad the renderable
-        renderable = Padding(renderable, (1, 1))
-
-        # Get console
-        console = self.console
-
-        # Clear console if interactive
-        interactive and console.clear()
-
-        # Print renderable
-        console.print(renderable, justify="center")
-
-        # Return if not interactive
-        if not interactive:
-            return
-
-        # Initialize should display list
-        should_display_list = False
-
-        # Initialize while loop
-        while True:
-
-            # Get command
-            command = console.input(_c.INPUT_TAG)
-
-            # Handle case of quit
-            if command in ["q", "quit"]:
-                break
-
-            # Get command and index
-            match = re.search(r"(\w+) *(\d+)", command)
-
-            # Continue if match is null
-            if not match:
-                continue
-
-            # Separate index from command
-            command, idx = match.group(1).lower().strip(), int(match.group(2))
-
-            # Get table name and interface
-            table_name, interface = tables[idx]
-
-            # Handle case of columns
-            if command in ["c", "cols", "columns"]:
-
-                # Initialize pager
-                with console.pager():
-
-                    # Get table renderable
-                    renderable = self.get_table_renderable(table_name)
-
-                    # Print table renderable
-                    console.print(renderable, justify="center")
-
-            # Otherwise handle case of rows
-            elif command in ["r", "rows"]:
-
-                # Set should display list to True
-                should_display_list = True
-
-                # Break here and call interface list view just before return
-                break
-
-        # Check if should display list
-        if should_display_list:
-
-            # Display interface list view
-            interface.display_list(
-                interactive=interactive,
-                return_callback=lambda: self.display_tables(interactive=interactive),
-            )
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ GET TABLE RENDERABLE                                                           │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def get_table_renderable(self, name):
-        """ Returns a Rich table renderable """
-
-        # Get interface
-        interface = self.tables.get(name)
-
-        # Return if interface is null
-        if not interface:
-            return
-
-        # Get field map
-        field_map = interface.field_map
-
-        # Get column count
-        col_count = len(field_map)
-
-        # Initialize Rich Table as renderable
-        renderable = Table(
-            title=f"Table: {name} ({col_count} "
-            f"{inflect_engine.plural('col', col_count)})"
-        )
-
-        # Add columns
-        [
-            renderable.add_column(col_name)
-            for col_name in ("#", "field", "display", "cast", "type")
-        ]
-
-        # Iterate over field map
-        for i, (field, info) in enumerate(field_map.items()):
-
-            # Get cast
-            cast = info[_c.CAST]
-
-            # Add row
-            renderable.add_row(
-                str(i),
-                field,
-                info[interface.DISPLAY],
-                str(cast),
-                str(interface.TYPE_MAP[cast]),
-            )
-
-        # Pad the renderable
-        renderable = Padding(renderable, (1, 1))
-
-        # Return renderable
-        return renderable
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ DISPLAY TABLE                                                                  │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def display_table(self, name):
-        """ Displays a list of columns of a tables using a Rich Table """
-
-        # Get table renderable
-        table = self.get_table_renderable(name)
-
-        # Display table of tables
-        self.console.print(table, justify="center")
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ CLOSE DRIVER                                                                   │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def close_driver(self):
-        """ Closes the yanker's active driver """
-
-        # Get browser
-        browser = self.browser
-
-        # Get drivers
-        driver = browser and browser.driver
-        driver_quick = browser and browser._driver_quick
-
-        # Close drivers
-        driver and driver.quit()
-        driver_quick and driver_quick.quit()
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INTERFACE                                                                      │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -706,7 +367,7 @@ class Yanker:
             db_table_name = method_name.replace("yank_", "")
 
             # Convert database table name to singular form
-            db_table_name = inflect_engine.singular_noun(db_table_name) or db_table_name
+            db_table_name = inflector.singular_noun(db_table_name) or db_table_name
 
             # Convert database table name to lower- snake-case
             db_table_name = db_table_name.lower().replace(" ", "")
