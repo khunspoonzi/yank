@@ -58,6 +58,12 @@ class Target:
         # Set driver
         self.driver = self.browser.driver if self.browser else None
 
+        # Set has captcha
+        self.has_captcha = False
+
+        # Set captcha solved
+        self.captcha_solved = False
+
         # Initialize requests
         self.requests = []
 
@@ -141,7 +147,7 @@ class Target:
     # │ GET                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get(self, driver_callback=None):
+    def get(self, driver_callback=None, solve_captcha_callback=None):
         """ Performs an HTTP GET request to the page using its yanker's requester """
 
         # Get URL
@@ -157,14 +163,16 @@ class Target:
         # │ DRIVER                                                                     │
         # └────────────────────────────────────────────────────────────────────────────┘
 
-        # Get driver
-        driver = self.driver
-
         # Determine if should use driver
-        should_use_driver = driver and (driver_callback or should_get_auto_headers)
+        should_use_driver = self.browser and (
+            driver_callback or solve_captcha_callback or should_get_auto_headers
+        )
 
         # Check if driver is not null
         if should_use_driver:
+
+            # Get driver
+            driver = self.driver
 
             # TODO: Copy cookies over from session
 
@@ -201,6 +209,14 @@ class Target:
 
                 # Get URL with driver
                 driver.get(url)
+
+            # Check if solve captcha callback is not null
+            if solve_captcha_callback:
+
+                # TODO: HOW TO MARK AS SOLVED?
+
+                # Pass driver into solve captcha callback
+                solve_captcha_callback(driver)
 
             # Iterate over driver requests
             for request in driver.requests:

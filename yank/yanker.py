@@ -87,6 +87,8 @@ class Yanker:
     # TODO: Implement batches as a column in database for freelance work
     # TODO: Implement ability to not define start URLs
     # TODO: Add ID to columns in display table
+    # TODO: Do not initialize database if not interface / (history)?
+    # TODO: Implement generic captcha detector
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -256,7 +258,7 @@ class Yanker:
 
         # Call wrap methods
         # This will determine whether the user has defined a driver callback method
-        has_driver_callback = self.wrap_methods()
+        has_driver_callback, has_solve_captcha_callback = self.wrap_methods()
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ BROWSER AND DRIVER                                                         │
@@ -266,7 +268,9 @@ class Yanker:
         self.browser = None
 
         # Determine if Selenium driver is required
-        driver_is_required = self.auto_headers or has_driver_callback
+        driver_is_required = (
+            self.auto_headers or has_driver_callback or has_solve_captcha_callback
+        )
 
         # Check if driver is required
         if driver_is_required:
@@ -351,7 +355,7 @@ class Yanker:
     # │ REQUEST                                                                        │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def request(self, url, method, driver_callback=None):
+    def request(self, url, method, driver_callback=None, solve_captcha_callback=None):
         """ Performs an HTTP request on a Target object """
 
         # Initialize target object from URL
@@ -361,7 +365,10 @@ class Yanker:
         if method == _c.GET:
 
             # Call GET method on target
-            target.get(driver_callback=driver_callback)
+            target.get(
+                driver_callback=driver_callback,
+                solve_captcha_callback=solve_captcha_callback,
+            )
 
         # Return target
         return target
@@ -370,11 +377,16 @@ class Yanker:
     # │ GET                                                                            │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get(self, url, driver_callback=None):
+    def get(self, url, driver_callback=None, solve_captcha_callback=None):
         """ Performs an HTTP GET request on a Target object """
 
         # Make GET request and return target
-        return self.request(url, method=_c.GET, driver_callback=driver_callback)
+        return self.request(
+            url,
+            method=_c.GET,
+            driver_callback=driver_callback,
+            solve_captcha_callback=solve_captcha_callback,
+        )
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ NOW                                                                            │
@@ -732,7 +744,13 @@ class Yanker:
         # └────────────────────────────────────────────────────────────────────────────┘
 
         # Define a method wrapper
-        def wrapper(method, driver_callback, clean_callback):
+        def wrapper(
+            method,
+            driver_callback,
+            clean_callback,
+            has_captcha_callback,
+            solve_captcha_callback,
+        ):
             """ Wraps a yank method to handle user-defined class logic """
 
             # ┌────────────────────────────────────────────────────────────────────────┐
@@ -832,6 +850,33 @@ class Yanker:
                 # Get target object from tarket URL
                 target = self.get(target, driver_callback=driver_callback)
 
+                # Check if has captcha callback
+                if has_captcha_callback:
+
+                    # Check if target has captcha
+                    if has_captcha_callback(target):
+
+                        # Set target has captcha
+                        target.has_captcha = True
+
+                        # Set target captcha solved to False
+                        target.captcha_solved = False
+
+                        # Check if solve captcha callback
+                        if solve_captcha_callback:
+
+                            # Get the target with captcha callback
+                            target = self.get(
+                                target.url,
+                                driver_callback=driver_callback,
+                                solve_captcha_callback=solve_captcha_callback,
+                            )
+
+                            # Get target object from tarket URL
+                            target = self.get(
+                                target.url, driver_callback=driver_callback
+                            )
+
                 # Get result
                 result = method(target, *args, *kwargs)
 
@@ -901,6 +946,9 @@ class Yanker:
         # Initialize has driver callback boolean
         has_driver_callback = False
 
+        # Initialize has solve captcha callback boolean
+        has_solve_captcha_callback = False
+
         # Iterate over yank methods
         for name, method in yank_methods.items():
 
@@ -920,6 +968,18 @@ class Yanker:
             # Get clean callback
             clean_callback = all_methods.get(name.replace("yank_", "clean_", 1))
 
+            # Get has captcha callback
+            has_captcha_callback = yank_methods.get(f"{name}__has_captcha")
+
+            # Get solve captcha callback
+            solve_captcha_callback = yank_methods.get(f"{name}__solve_captcha")
+
+            # Check if solve captcha callback is not null
+            if solve_captcha_callback:
+
+                # Set has has solve captcha callback to True
+                has_solve_captcha_callback = True
+
             # Wrap and set yank method
             setattr(
                 self,
@@ -928,8 +988,10 @@ class Yanker:
                     method,
                     driver_callback=driver_callback,
                     clean_callback=clean_callback,
+                    has_captcha_callback=has_captcha_callback,
+                    solve_captcha_callback=solve_captcha_callback,
                 ),
             )
 
-        # Return has driver callback
-        return has_driver_callback
+        # Return callback booleans
+        return has_driver_callback, has_solve_captcha_callback
