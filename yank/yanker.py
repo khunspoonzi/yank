@@ -107,6 +107,9 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
     # Initialize mode to transient
     mode = TRANSIENT
 
+    # Initialize start URL to empty string
+    start_url = ""
+
     # Initialize start URLs to None
     start_urls = None
 
@@ -140,6 +143,7 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
 
     def __init__(
         self,
+        start_url=None,
         start_urls=None,
         mode="",
         auto_headers=None,
@@ -224,6 +228,23 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
             # Convert to list
             self.start_urls = [self.start_urls]
 
+        # Initialize start URL
+        self.start_url = start_url or self.start_url
+
+        # Get start URL
+        start_url = self.start_url
+
+        # Check if start URL is defined
+        if start_url:
+
+            # Convert to list
+            start_url = (
+                list(start_url) if type(start_url) in [list, tuple] else [start_url]
+            )
+
+            # Add start URL to start URLs
+            self.start_urls = start_url + self.start_urls
+
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ HEADERS                                                                    │
         # └────────────────────────────────────────────────────────────────────────────┘
@@ -296,10 +317,10 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
             )
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ YANK                                                                           │
+    # │ _YANK                                                                          │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def yank(self):
+    def _yank(self):
         """ Runs the yanker on its start URLs """
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
@@ -312,8 +333,12 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
             # Initialize try-except block
             try:
 
-                # Call yank start method on start URL
+                # Call yank method on start URL
                 self.yank_start(start_url)
+
+                # NOTE: yank_start is actually yank but renamed upon being wrapped
+                # This is so that _yank can be renamed to yank, which will allow the
+                # user to automatigically call Yanker.yank() without any arguments
 
             # Except any exception
             except SessionLimitReached:
@@ -338,10 +363,10 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
         self.close_driver()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ YANK START                                                                     │
+    # │ YANK                                                                           │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def yank_start(self, target):
+    def yank(self, target):
         """ The action performed on each of the yanker's start URLs """
 
         # Raise NotImplementedError
@@ -505,11 +530,26 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
                     # Generate a random integer between min and max
                     throttle_ms = random.randint(min(throttle_ms), max(throttle_ms))
 
-                # Implement sleep to throttle the request
-                time.sleep(throttle_ms / 1000)
+                # Check if throttle ms is not null
+                if throttle_ms:
+
+                    # Implement sleep to throttle the request
+                    time.sleep(throttle_ms / 1000)
 
                 # Get target object from tarket URL
                 target = self.get(target, driver_callback=driver_callback)
+
+                # Get status code
+                status_code = target.status_code
+
+                # Get status color
+                status_color = "green" if 200 <= status_code < 300 else "red"
+
+                # Construct log
+                log = f"GET {target.url} [bold {status_color}]{status_code}[/]"
+
+                # Log request
+                self.console.log(log)
 
                 # Check if has captcha callback
                 if has_captcha_callback:
@@ -597,6 +637,9 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
         # │ WRAP METHODS                                                               │
         # └────────────────────────────────────────────────────────────────────────────┘
 
+        # Rename yank to yank start
+        setattr(self, "yank_start", self.yank)
+
         # Get all methods
         all_methods = inspect.getmembers(self, predicate=inspect.ismethod)
         all_methods = {k: v for k, v in all_methods}
@@ -653,6 +696,9 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
                     solve_captcha_callback=solve_captcha_callback,
                 ),
             )
+
+        # Rename _yank to yank
+        setattr(self, "yank", self._yank)
 
         # Return callback booleans
         return has_driver_callback, has_solve_captcha_callback
