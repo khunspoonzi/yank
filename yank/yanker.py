@@ -345,7 +345,7 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
         """ The action performed on each of the yanker's start URLs """
 
         # Raise NotImplementedError
-        raise
+        raise NotImplementedError
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INTERFACE                                                                      │
