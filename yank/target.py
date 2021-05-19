@@ -47,7 +47,7 @@ class Target:
         url_parsed = urlparse(url)
 
         # Set base URL
-        self.url_base = f"{url_parsed.scheme}://{url_parsed.netloc}"
+        self.url_base = self.base_url = f"{url_parsed.scheme}://{url_parsed.netloc}"
 
         # Set yanker
         self.yanker = yanker
