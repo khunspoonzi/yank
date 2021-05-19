@@ -1,4 +1,10 @@
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ GENERAL IMPORTS                                                                    │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+from json.decoder import JSONDecodeError
+
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ BEAUTIFUL SOUP IMPORTS                                                             │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -83,7 +89,7 @@ class Response:
             # Return JSON data
             return _json
 
-        except AttributeError:
+        except (AttributeError, JSONDecodeError):
 
             # Return None
             return None
