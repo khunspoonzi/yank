@@ -385,7 +385,26 @@ Currently supported interface options include:
 <details>
 <summary><strong>Reading Yanked Items</strong></summary>
 
-[...]
+<br/>
+
+1. Initialize a yanker instance from your custom Yanker class.
+2. Call the read method on your yanker instance.
+
+```python
+# ──────────────────────────────────────────────────────────────────────────────────────
+#  SCRIPT                                                                  
+# ──────────────────────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+
+    # Initialize yanker
+    yanker = QuoteYanker()
+
+    # Read from yanker
+    yanker.read()
+```
+
+The above script will initialize an instance of the yanker class defined previously, and then display an interactive console by calling its read method.
 
 </details>
 
