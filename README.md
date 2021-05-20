@@ -15,6 +15,9 @@ pip install yank
 ```
 
 ## The Yanker Class
+
+Only one import is required in order to begin using the utility kit.
+
 ```python
 from yank import Yanker
 ```
