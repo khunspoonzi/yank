@@ -15,7 +15,7 @@ pip install yank
 ```
 
 ## The Yanker Class
-```
+```python
 from yank import Yanker
 ```
 
