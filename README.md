@@ -348,7 +348,7 @@ Currently supported interface casts include:
 </details>
 
 <details>
-<summary>Storing Yanked Items: Interface Options</summary>
+<summary><strong>Storing Yanked Items: Interface Options</strong></summary>
 
 <br/>
 
