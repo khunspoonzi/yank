@@ -8,7 +8,7 @@ from datetime import datetime
 # │ SQLALCHEMY IMPORTS                                                                 │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
-from sqlalchemy import DateTime, exists, Float, func, Integer, String
+from sqlalchemy import Boolean, DateTime, exists, Float, func, Integer, String
 
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
@@ -28,6 +28,7 @@ class InterfaceDatabaseMixin:
         str: String,
         int: Integer,
         float: Float,
+        bool: Boolean,
         datetime: DateTime,
     }
 
