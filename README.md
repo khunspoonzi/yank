@@ -370,7 +370,14 @@ Currently supported interface options include:
 </details>
 
 <details>
-<summary>Displaying Yanked Items</summary>
+<summary>Reading Yanked Items</summary>
+
+[...]
+
+</details>
+
+<details>
+<summary>Writing Yanked Items</summary>
 
 [...]
 
