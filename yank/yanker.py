@@ -384,6 +384,16 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
         raise NotImplementedError
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ READ                                                                           │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def read(self):
+        """ Displays an interactive console of tables in the database """
+
+        # Display tables in interactive mode
+        self.display_tables(interactive=True)
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INTERFACE                                                                      │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
