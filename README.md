@@ -24,6 +24,8 @@ from yank import Yanker
 <details>
 <summary>Defining A Yanker</summary>
 
+<br/>
+
 1. Create a class that inherits from Yanker.
 2. Specify a start URL as a class attribute, which is used to initiate the first HTTP request.
 3. Define a method called "yank" that accepts one argument: target, which is used to access data returned from the completed HTTP request.
@@ -85,8 +87,11 @@ The above class provides the basic building blocks for your yanker to get starte
 Of course, none of this will actually happen until the yanker is initialized and run.
 
 </details>
+
 <details>
 <summary>Running A Yanker</summary>
+
+<br/>
 
 1. Initialize a yanker instance from your custom Yanker class.
 2. Call the yank method on your yanker instance without any arguments; the target object is supplied automagically.
@@ -114,6 +119,8 @@ The above script will initialize an instance of the yanker class defined previou
 
 <details>
 <summary>Yanking Items</summary>
+
+<br/>
 
 1. Define a method called "yank" that accepts one argument: target.
 2. Supply the logic necessary to extract your target's data and yield a dictionary for each distinct item.
@@ -206,6 +213,8 @@ Of course, your yanked items are simply cast into the void until they are stored
 <details>
 <summary>Cleaning Yanked Items</summary>
 
+<br/>
+
 1. Define a method called "clean" that accepts two arguments: target and item.
 2. Supply the logic necessary to clean the item yielded from the yank method.
 3. Return the cleaned item.
@@ -260,6 +269,8 @@ Of course, cleaning can be handled directly within the yank method if you wish t
 
 <details>
 <summary>Storing Yanked Items: Interface</summary>
+
+<br/>
 
 1. Apply a Yanker.interface decorator to the yank method.
 2. Supply keyword arguments that correspond to column name and value type. 
@@ -338,6 +349,8 @@ Currently supported interface casts include:
 
 <details>
 <summary>Storing Yanked Items: Interface Options</summary>
+
+<br/>
 
 1. Convert the righthand side of each interface keyword into a dictionary.
 2. Add additional options to each dictionary if necessary. 
