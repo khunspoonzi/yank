@@ -22,7 +22,7 @@ from yank import Yanker
 ## Getting Started
 
 <details>
-<summary>Defining A Yanker</summary>
+<summary><strong>Defining A Yanker</strong></summary>
 
 <br/>
 
@@ -89,7 +89,7 @@ Of course, none of this will actually happen until the yanker is initialized and
 </details>
 
 <details>
-<summary>Running A Yanker</summary>
+<summary><strong>Running A Yanker</strong></summary>
 
 <br/>
 
@@ -118,7 +118,7 @@ The above script will initialize an instance of the yanker class defined previou
 </details>
 
 <details>
-<summary>Yanking Items</summary>
+<summary><strong>Yanking Items</strong></summary>
 
 <br/>
 
@@ -211,7 +211,7 @@ Of course, your yanked items are simply cast into the void until they are stored
 </details>
 
 <details>
-<summary>Cleaning Yanked Items</summary>
+<summary><strong>Cleaning Yanked Items</strong></summary>
 
 <br/>
 
@@ -268,7 +268,7 @@ Of course, cleaning can be handled directly within the yank method if you wish t
 </details>
 
 <details>
-<summary>Storing Yanked Items: Interface</summary>
+<summary><strong>Storing Yanked Items: Interface</strong></summary>
 
 <br/>
 
@@ -383,14 +383,14 @@ Currently supported interface options include:
 </details>
 
 <details>
-<summary>Reading Yanked Items</summary>
+<summary><strong>Reading Yanked Items</strong></summary>
 
 [...]
 
 </details>
 
 <details>
-<summary>Writing Yanked Items</summary>
+<summary><strong>Writing Yanked Items</strong></summary>
 
 [...]
 
