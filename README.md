@@ -343,7 +343,7 @@ Currently supported interface casts include:
 - Integer (int)
 - Float (float)
 - Boolean (bool)
-- Datetime (datetime)
+- Datetime (datetime.datetime)
 
 </details>
 
@@ -371,7 +371,7 @@ Currently supported interface casts include:
 )
 ```
 
-The above snippet demonstrates a shorthand and longhand version of the same interface declaration. The shorthand version expects a column name on the left side and a cast on the right side. The longhand version expects a dictionary on the right side that contains at least the cast specification .
+The above snippet demonstrates a shorthand and longhand version of the same interface declaration. The shorthand version expects a column name on the left side and a cast on the right side. The longhand version expects a dictionary on the right side that contains at least the cast specification, plus any other interface options as necessary.
 
 Currently supported interface options include:
 
