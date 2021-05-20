@@ -337,7 +337,7 @@ Currently supported interface casts include:
 <summary>Storing Yanked Items: Interface Options</summary>
 
 1. Convert the righthand side of each interface keyword into a dictionary.
-2. Add additional otions to each dictionary if necessary. 
+2. Add additional options to each dictionary if necessary. 
 
 ```python
 # Shorthand
