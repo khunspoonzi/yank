@@ -45,6 +45,9 @@ class InterfaceDatabaseMixin:
     def new(self, **kwargs):
         """ A creates a new Item using the SQLAlchemy ORM Item class """
 
+        # Get rid of all kwargs not in field map
+        kwargs = {k: v for k, v in kwargs.items() if k in self.field_map}
+
         # Cast the item fields spplied as kawrgs and return an initialized Item object
         return self.Item(**self.cast_fields(kwargs))
 

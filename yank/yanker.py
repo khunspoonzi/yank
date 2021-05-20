@@ -81,6 +81,7 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
     # TODO: Add ID to columns in display table
     # TODO: Do not initialize database if not interface / (history)?
     # TODO: Implement generic captcha detector
+    # TODO: Accept return statement in yank methods
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CONSTANTS                                                                      │
@@ -320,8 +321,18 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
     # │ _YANK                                                                          │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def _yank(self):
+    def _yank(self, target=None, **kwargs):
         """ Runs the yanker on its start URLs """
+
+        # Check if target URL is defined
+        if target:
+
+            # Call yank start on target URL and return
+            self.yank_start(target, **kwargs)
+            return
+
+            # NOTE: We do this in case the user calls their initial yank method again
+            # which has since been renamed to yank start
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ ITERATE OVER START URLS                                                    │
@@ -396,6 +407,9 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
 
             # Convert database table name to lower- snake-case
             db_table_name = db_table_name.lower().replace(" ", "")
+
+            # Rename in case of yank start method
+            db_table_name = "item" if db_table_name == "yank" else db_table_name
 
             # Initialize an interface
             interface = Interface(DBBase, db_table_name=db_table_name, **kwargs)
@@ -578,34 +592,28 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
                                 target.url, driver_callback=driver_callback
                             )
 
-                # Get result
-                result = method(target, *args, *kwargs)
+                # Iterate over generated items
+                for item in method(target, *args, *kwargs):
 
-                # ┌────────────────────────────────────────────────────────────────────┐
-                # │ CLEAN RESULT                                                       │
-                # └────────────────────────────────────────────────────────────────────┘
+                    # ┌────────────────────────────────────────────────────────────────┐
+                    # │ CLEAN RESULT                                                   │
+                    # └────────────────────────────────────────────────────────────────┘
 
-                # Check if clean callback exists
-                if clean_callback:
+                    # Check if clean callback exists
+                    if clean_callback:
 
-                    # Pass result through clean callback
-                    result = clean_callback(target.interface, result) or result
+                        # Pass result through clean callback
+                        item = clean_callback(target.interface, item) or item
 
-                # ┌────────────────────────────────────────────────────────────────────┐
-                # │ CAST VALUES                                                        │
-                # └────────────────────────────────────────────────────────────────────┘
+                    # ┌────────────────────────────────────────────────────────────────┐
+                    # │ STORE ITEM                                                     │
+                    # └────────────────────────────────────────────────────────────────┘
 
-                # Get interface
-                interface = target.interface
+                    # Get interface
+                    interface = target.interface
 
-                # Check if interface is not None
-                if interface is not None:
-
-                    # Convert result to list if not list
-                    result = result if type(result) in [list, tuple] else [result]
-
-                    # Iterate over result
-                    for item in result:
+                    # Check if interface is not None
+                    if interface is not None:
 
                         # Continue if item is None
                         if item is None:
@@ -627,9 +635,6 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
                         # Increment interface session count
                         interface.session_count += 1
 
-                # Return the evaluated method
-                return result
-
             # Return the wrapped method
             return wrapped
 
@@ -639,6 +644,15 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
 
         # Rename yank to yank start
         setattr(self, "yank_start", self.yank)
+
+        # Get clean callback
+        clean = getattr(self, "clean", None)
+
+        # Check if clean is not null
+        if clean:
+
+            # Rename clean to clean start
+            setattr(self, "clean_start", clean)
 
         # Get all methods
         all_methods = inspect.getmembers(self, predicate=inspect.ismethod)

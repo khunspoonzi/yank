@@ -432,6 +432,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # Get field map
         field_map = self.field_map
 
+        # Return value if field not in field map
+        if field not in field_map:
+            return value
+
         # Check if value is None
         if value is None:
 
