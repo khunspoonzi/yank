@@ -261,6 +261,9 @@ Of course, cleaning can be handled directly within the yank method if you wish t
 <details>
 <summary>Storing Yanked Items: Interface</summary>
 
+1. Apply a Yanker.interface decorator to the yank method.
+2. Supply keyword arguments that correspond to column name and value type. 
+
 ```python
 # ──────────────────────────────────────────────────────────────────────────────────────
 #  QUOTE YANKER
