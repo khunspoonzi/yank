@@ -21,6 +21,8 @@ from rich.table import Table
 
 import yank.constants as _c
 
+from yank.tools import display_commands
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ INTERFACE DISPLAY MIXIN                                                            │
@@ -90,7 +92,7 @@ class InterfaceDisplayMixin:
                 renderable.title += f"\nPage {int(offset / limit) + 1} of {page_count}"
 
             # Set caption
-            renderable.caption = "c\[ommands]: Display available commands"  # noqa
+            renderable.caption = "c\[ommands]: Show available commands"  # noqa
 
         # Get display map
         display_map = self.list_display_map
@@ -144,57 +146,6 @@ class InterfaceDisplayMixin:
         return renderable, row_count
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ GET LIST COMMANDS RENDERABLE                                                   │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def get_list_commands_renderable(self):
-        """ Returns a Rich table renderable for commands of the interface list view """
-
-        # Initialize Rich Table as renderable
-        renderable = Table(title="List View Commands")
-
-        # Add columns
-        [
-            renderable.add_column(col_name)
-            for col_name in ("#", "command", "argument", "description", "example")
-        ]
-
-        # Define commands
-        commands = (
-            ("'", "[<int>]", "Go to next \[nth] page", "' 5"),  # noqa
-            (";", "[<int>]", "Go to previous \[nth] page", "; 3"),  # noqa
-            ("l\[imit]", "<int>", "Set max number of rows per page", "l 10"),  # noqa
-            (
-                "s\[ort]",
-                "<field>[,<field>]",
-                "Sort rows by field(s)",
-                "s name,-age",
-            ),  # noqa
-            (
-                "f\[ilter]",
-                "<field>=<value>[,<field>=<value>]",
-                "Filter rows by field(s)",
-                "f name=Bob,age=24",
-            ),  # noqa
-            ("d\[etail]", "<id>", "Display a row in detail view", "d 5"),  # noqa
-            ("r\[eset]", None, "Reset sort and filter parameters", "r"),  # noqa
-        )
-
-        # Iterate over commands
-        for i, (command, arguments, description, example) in enumerate(commands):
-
-            # Add row
-            renderable.add_row(
-                str(i), command, arguments or "", description, example or ""
-            )
-
-        # Pad the renderable
-        renderable = Padding(renderable, (1, 1))
-
-        # Return renderable
-        return renderable
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ DISPLAY LIST                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -205,7 +156,6 @@ class InterfaceDisplayMixin:
         offset=0,
         sort_by=None,
         filter_by=None,
-        return_callback=None,
     ):
         """ Displays a list of items using a Rich Table """
 
@@ -239,9 +189,6 @@ class InterfaceDisplayMixin:
         if not interactive:
             return
 
-        # Initialize should display detail
-        should_display_detail = False
-
         # Initialize while loop
         while True:
 
@@ -263,14 +210,28 @@ class InterfaceDisplayMixin:
             # Otherwise handle case of command
             elif command in ["c", "command", "commands"]:
 
-                # Initialize pager
-                with console.pager():
-
-                    # Get table renderable
-                    renderable = self.get_list_commands_renderable()
-
-                    # Print table renderable
-                    console.print(renderable, justify="center")
+                # Display commands
+                display_commands(
+                    "List View Commands",
+                    console,
+                    ("'", "<int> = 1", "Go to next nth page", "' 5"),
+                    (";", "<int> = 1", "Go to previous nth page", "; 3"),
+                    ("l[imit]", "<int>", "Set max number of rows per page", "l 10"),
+                    (
+                        "s[ort]",
+                        "<field>[,<field>]",
+                        "Sort rows by field(s)",
+                        "s name,-age",
+                    ),
+                    (
+                        "f[ilter]",
+                        "<field>=<value>[,<field>=<value>]",
+                        "Filter rows by field(s)",
+                        "f name=Bob,age=24",
+                    ),
+                    ("d[etail]", "<id>", "Display a row in detail view", "d 5"),
+                    ("r[eset]", "", "Reset sort and filter parameters", "r"),
+                )
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ ARGUMENT COMMANDS                                                      │
@@ -282,12 +243,10 @@ class InterfaceDisplayMixin:
                 # Get command and index
                 match = re.search(r"([a-zA-Z';]+) *(.*)", command)
 
-                # Continue if match is null
-                if not match:
-                    continue
-
                 # Separate args from command
-                command, args = match.group(1).strip(), match.group(2)
+                command, args = (
+                    (match.group(1).strip(), match.group(2)) if match else (None, None)
+                )
 
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ NEXT PAGE                                                          │
@@ -369,11 +328,8 @@ class InterfaceDisplayMixin:
                     # Get item ID
                     item_id = int(args)
 
-                    # Set should display detail to True
-                    should_display_detail = True
-
-                    # Break here and call interface list view just before return
-                    break
+                    # Display interface detail view
+                    self.display_detail(item_id=item_id, interactive=interactive)
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ RE-RENDER                                                              │
@@ -393,32 +349,6 @@ class InterfaceDisplayMixin:
 
             # Print renderable list view and return
             console.print(renderable, justify="center")
-
-        # Check if should display detail
-        if should_display_detail:
-
-            # Display interface detail view
-            self.display_detail(
-                item_id=item_id,
-                interactive=interactive,
-                return_callback=lambda: self.display_list(
-                    interactive=interactive,
-                    limit=limit,
-                    offset=offset,
-                    sort_by=sort_by,
-                    filter_by=filter_by,
-                ),
-            )
-
-        # ┌────────────────────────────────────────────────────────────────────────────┐
-        # │ RETURN CALLBACK                                                            │
-        # └────────────────────────────────────────────────────────────────────────────┘
-
-        # Check if return callback is not null
-        if return_callback:
-
-            # Call return callback
-            return_callback()
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ GET DETAIL RENDERABLE                                                          │
@@ -468,12 +398,7 @@ class InterfaceDisplayMixin:
     # │ DISPLAY DETAIL                                                                 │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def display_detail(
-        self,
-        item_id,
-        interactive=False,
-        return_callback=None,
-    ):
+    def display_detail(self, item_id, interactive=False):
         """ Displays an item detail view using Rich Panels """
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
@@ -493,13 +418,3 @@ class InterfaceDisplayMixin:
         console.print(renderable, justify="center")
 
         input("temp")
-
-        # ┌────────────────────────────────────────────────────────────────────────────┐
-        # │ RETURN CALLBACK                                                            │
-        # └────────────────────────────────────────────────────────────────────────────┘
-
-        # Check if return callback is not null
-        if return_callback:
-
-            # Call return callback
-            return_callback()
