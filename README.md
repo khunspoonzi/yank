@@ -409,6 +409,10 @@ if __name__ == "__main__":
 
 The above script will initialize an instance of the yanker class defined previously, and then display an interactive console by calling its read method. Use this interactive console to navigate the tables in your database.
 
+<p align="center">
+    <img src="./media/interface_list_view.png" alt="Yank Logo">
+</p>
+
 </details>
 
 <details>
