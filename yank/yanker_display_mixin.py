@@ -18,6 +18,8 @@ from rich.table import Table
 
 import yank.constants as _c
 
+from yank.tools import display_commands
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ YANKER DISPLAY MIXIN                                                               │
@@ -75,8 +77,102 @@ class YankerDisplayMixin:
     def display_tables(self, interactive=False):
         """ Displays a list of tables using a Rich Table """
 
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ STATIC                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
         # Get tables
-        tables = self.tables
+        tables = [(name, interface) for name, interface in self.tables.items()]
+
+        # Get console
+        console = self.console
+
+        # Clear console if interactive
+        interactive and console.clear()
+
+        # Get renderable
+        renderable = self.get_tables_renderable(tables=tables, interactive=interactive)
+
+        # Print renderable
+        console.print(renderable, justify="center")
+
+        # Return if not interactive
+        if not interactive:
+            return
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ INTERACTIVE                                                                │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Initialize while loop
+        while True:
+
+            # Get command
+            command = console.input(_c.INPUT_TAG)
+
+            # Handle case of quit
+            if command in ["q", "quit"]:
+                break
+
+            # Otherwise handle case of command
+            elif command in ["c", "command", "commands"]:
+
+                # Display commands
+                display_commands(
+                    "Available Commands",
+                    console,
+                    ("r[ows]", "<#>", "Show table rows", "r0"),
+                    ("c[ols]", "<#>", "Show table columns", "c0"),
+                )
+
+            # Get command and index
+            match = re.search(r"(\w+) *(\d+)", command)
+
+            # Check if match is not null
+            if match:
+
+                # Separate index from command
+                command, idx = (match.group(1).lower().strip(), int(match.group(2)))
+
+                # Initialize try-except block
+                try:
+
+                    # Get table name and interface
+                    table_name, interface = tables[idx]
+
+                # Handle IndexError
+                except IndexError:
+
+                    # Set table name and interface to None
+                    table_name = interface = None
+
+                # Check if table name and interface are not null
+                if table_name and interface:
+
+                    # Handle case of columns
+                    if command in ["c", "cols", "columns"]:
+
+                        # Display table
+                        self.display_table(table_name, interactive=interactive)
+
+                    # Otherwise handle case of rows
+                    elif command in ["r", "rows"]:
+
+                        # Display interface list view
+                        interface.display_list(interactive=interactive)
+
+            # Clear console
+            console.clear()
+
+            # Print renderable
+            console.print(renderable, justify="center")
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ GET TABLES RENDERABLE                                                          │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def get_tables_renderable(self, tables, interactive=False):
+        """ Displays a list of tables using a Rich Table """
 
         # Get table count
         table_count = len(tables)
@@ -86,21 +182,20 @@ class YankerDisplayMixin:
             title=(
                 f"Tables: {self.db_name} "
                 f"({table_count} {self.inflector.plural('table', table_count)})"
-            ),
-            caption=(
-                "c\[ols] <#>: Display column info\n"  # noqa
-                "r\[ows] <#>: Display available rows"  # noqa
-            ),
+            )
         )
+
+        # Check if interactive
+        if interactive:
+
+            # Set caption
+            renderable.caption = "c\[ommands]: Show available commands"  # noqa
 
         # Add columns
         [
             renderable.add_column(col_name)
             for col_name in ("#", "name", "interface", "cols", "rows")
         ]
-
-        # Convert tables to list of tuples
-        tables = [(name, interface) for name, interface in tables.items()]
 
         # Iterate over tables
         for i, (table_name, interface) in enumerate(tables):
@@ -119,6 +214,23 @@ class YankerDisplayMixin:
         # Pad the renderable
         renderable = Padding(renderable, (1, 1))
 
+        # Return renderable
+        return renderable
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ DISPLAY TABLE                                                                  │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    def display_table(self, name, interactive=False):
+        """ Displays a list of columns of a table using a Rich Table """
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ STATIC                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Get table renderable
+        renderable = self.get_table_renderable(name, interactive=interactive)
+
         # Get console
         console = self.console
 
@@ -132,8 +244,9 @@ class YankerDisplayMixin:
         if not interactive:
             return
 
-        # Initialize should display list
-        should_display_list = False
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ INTERACTIVE                                                                │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Initialize while loop
         while True:
@@ -145,54 +258,23 @@ class YankerDisplayMixin:
             if command in ["q", "quit"]:
                 break
 
-            # Get command and index
-            match = re.search(r"(\w+) *(\d+)", command)
+            # Otherwise handle case of command
+            elif command in ["c", "command", "commands"]:
 
-            # Continue if match is null
-            if not match:
-                continue
+                # Display commands
+                display_commands(title="Available Commands", console=console)
 
-            # Separate index from command
-            command, idx = match.group(1).lower().strip(), int(match.group(2))
+            # Clear console
+            console.clear()
 
-            # Get table name and interface
-            table_name, interface = tables[idx]
-
-            # Handle case of columns
-            if command in ["c", "cols", "columns"]:
-
-                # Initialize pager
-                with console.pager():
-
-                    # Get table renderable
-                    renderable = self.get_table_renderable(table_name)
-
-                    # Print table renderable
-                    console.print(renderable, justify="center")
-
-            # Otherwise handle case of rows
-            elif command in ["r", "rows"]:
-
-                # Set should display list to True
-                should_display_list = True
-
-                # Break here and call interface list view just before return
-                break
-
-        # Check if should display list
-        if should_display_list:
-
-            # Display interface list view
-            interface.display_list(
-                interactive=interactive,
-                return_callback=lambda: self.display_tables(interactive=interactive),
-            )
+            # Print renderable
+            console.print(renderable, justify="center")
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ GET TABLE RENDERABLE                                                           │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def get_table_renderable(self, name):
+    def get_table_renderable(self, name, interactive=False):
         """ Returns a Rich table renderable """
 
         # Get interface
@@ -213,6 +295,12 @@ class YankerDisplayMixin:
             title=f"Table: {name} ({col_count} "
             f"{self.inflector.plural('col', col_count)})"
         )
+
+        # Check if interactive
+        if interactive:
+
+            # Set caption
+            renderable.caption = "c\[ommands]: Show available commands"  # noqa
 
         # Add columns
         [
@@ -240,16 +328,3 @@ class YankerDisplayMixin:
 
         # Return renderable
         return renderable
-
-    # ┌────────────────────────────────────────────────────────────────────────────────┐
-    # │ DISPLAY TABLE                                                                  │
-    # └────────────────────────────────────────────────────────────────────────────────┘
-
-    def display_table(self, name):
-        """ Displays a list of columns of a tables using a Rich Table """
-
-        # Get table renderable
-        table = self.get_table_renderable(name)
-
-        # Display table of tables
-        self.console.print(table, justify="center")
