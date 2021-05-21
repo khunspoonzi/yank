@@ -351,8 +351,8 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
                 # This is so that _yank can be renamed to yank, which will allow the
                 # user to automatigically call Yanker.yank() without any arguments
 
-            # Except any exception
-            except SessionLimitReached:
+            # Except graceful exceptions
+            except (KeyboardInterrupt, SessionLimitReached):
 
                 # Pass onto end of method
                 pass
