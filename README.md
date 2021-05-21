@@ -407,7 +407,7 @@ if __name__ == "__main__":
     yanker.read()
 ```
 
-The above script will initialize an instance of the yanker class defined previously, and then display an interactive console by calling its read method.
+The above script will initialize an instance of the yanker class defined previously, and then display an interactive console by calling its read method. Use this interactive console to navigate the tables in your database.
 
 </details>
 
