@@ -185,7 +185,7 @@ class InterfaceDatabaseMixin:
             field_obj = field_cache[field]
 
             # ┌────────────────────────────────────────────────────────────────────────┐
-            # │ FILTER QUERYSET                                                        │
+            # │ SUBSTRING                                                              │
             # └────────────────────────────────────────────────────────────────────────┘
 
             # Handle case of substring
@@ -242,6 +242,20 @@ class InterfaceDatabaseMixin:
 
                 # Filter queryset
                 queryset = queryset.filter(query)
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ REGEX                                                                  │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Otherwise handle case of regex
+            elif modifier == _c.REGEX:
+
+                # Filter with regexp query
+                queryset = queryset.filter(field_obj.op("regexp")(value))
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ FILTER BY                                                              │
+            # └────────────────────────────────────────────────────────────────────────┘
 
             # Otherwise handle filter by case
             else:
