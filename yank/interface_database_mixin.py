@@ -10,6 +10,12 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, exists, Float, func, Integer, String
 
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ PROJECT IMPORTS                                                                    │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+import yank.constants as _c
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ INTERFACE DATABASE MIXIN                                                           │
@@ -138,11 +144,29 @@ class InterfaceDatabaseMixin:
             {k.lower(): v for k, v in display_map.items()} if display_map else {}
         )
 
-        # Initialize kwargs
-        _kwargs = {}
+        # Get queryset
+        queryset = queryset or self.db_session.query(Item)
+
+        # Initialize field cache
+        field_cache = {}
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ ITERATE OVER KWARGS                                                        │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Iterate over kwargs
         for field, value in kwargs.items():
+
+            # Split field by modifier
+            field_split = field.split("__")
+
+            # Separate field from modifier
+            field, modifier = (
+                field_split if len(field_split) == 2 else (field_split[0], None)
+            )
+
+            # Set modifier
+            modifier = modifier.lower() if modifier else ""
 
             # Check if field not in field map
             if field not in field_map:
@@ -154,14 +178,79 @@ class InterfaceDatabaseMixin:
             if field not in field_map:
                 continue
 
-            # Add field to kwargs
-            _kwargs[field] = value
+            # Add field object to field cache
+            field_cache[field] = field_cache.get(field, getattr(Item, field))
 
-        # Get queryset
-        queryset = queryset or self.db_session.query(Item)
+            # Get field object
+            field_obj = field_cache[field]
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ FILTER QUERYSET                                                        │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Handle case of substring
+            if modifier in (
+                _c.CONTAINS,
+                _c.ICONTAINS,
+                _c.STARTSWITH,
+                _c.ISTARTSWITH,
+                _c.ENDSWITH,
+                _c.IENDSWITH,
+            ):
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ ARGUMENT STRING                                                    │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Handle case of contains
+                if modifier in (_c.CONTAINS, _c.ICONTAINS):
+
+                    # Wrap argument string in % signs
+                    arg_string = f"%{value}%"
+
+                # Otherwise handle case of starts with
+                elif modifier in (_c.STARTSWITH, _c.ISTARTSWITH):
+
+                    # Add % sign to end of argument string
+                    arg_string = f"{value}%"
+
+                # Otherwise handle case of ends with
+                elif modifier in (_c.ENDSWITH, _c.IENDSWITH):
+
+                    # Add % sign to start of argument string
+                    arg_string = f"%{value}"
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ QUERY                                                              │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Handle case of case-sensitive
+                if modifier in (_c.CONTAINS, _c.STARTSWITH, _c.ENDSWITH):
+
+                    # Set query using like
+                    query = field_obj.like(arg_string)
+
+                # Otherwise handle case of case-insensitive
+                elif modifier in (_c.ICONTAINS, _c.ISTARTSWITH, _c.IENDSWITH):
+
+                    # Set query using ilike
+                    query = field_obj.ilike(arg_string)
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ FILTER                                                             │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Filter queryset
+                queryset = queryset.filter(query)
+
+            # Otherwise handle filter by case
+            else:
+
+                # Filter queryset by filter by kwargs
+                queryset = queryset.filter_by(**{field: value})
 
         # Return filtered queryset
-        return queryset.filter_by(**_kwargs)
+        return queryset
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ SORT                                                                           │

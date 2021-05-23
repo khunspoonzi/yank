@@ -271,6 +271,9 @@ class InterfaceDisplayMixin:
                 # Otherwise handle case of previous page
                 elif command == ";":
 
+                    # Define multiplier
+                    multiplier = int(args) if args.isdigit() else 1
+
                     # Get new offset
                     new_offset = offset - (limit * multiplier)
 
@@ -300,6 +303,15 @@ class InterfaceDisplayMixin:
                     # Set sort by argument
                     sort_by = [f.strip() for f in args.split(",")]
 
+                    # Remove null items
+                    sort_by = [s for s in sort_by if s]
+
+                    # Set to None if null
+                    sort_by = sort_by or None
+
+                    # Reset offset to zero
+                    offset = 0
+
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ FILTER                                                             │
                 # └────────────────────────────────────────────────────────────────────┘
@@ -311,12 +323,24 @@ class InterfaceDisplayMixin:
                     filter_by = [f.strip() for f in args.split(",")]
 
                     # Convert filter by to kwargs
-                    filter_by = {f: v for f, v in [arg.split("=") for arg in filter_by]}
+                    filter_by = (
+                        {
+                            f: v
+                            for f, v in [
+                                arg.split("=") for arg in filter_by if "=" in arg
+                            ]
+                        }
+                        if filter_by
+                        else None
+                    )
 
                     # Cast values
                     filter_by = self.cast_fields(
                         filter_by, display_map=self.list_display_map
                     )
+
+                    # Reset offset to zero
+                    offset = 0
 
                 # ┌────────────────────────────────────────────────────────────────────┐
                 # │ DETAIL                                                             │

@@ -202,9 +202,14 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
         # Initialize database engine
         self.db_engine = create_engine(f"sqlite:///{self.db_name}.db")
 
-        # Register exponent function with SQLite
+        # Setup database engine event listener with SQLite
         @event.listens_for(self.db_engine, "connect")
-        def create_functions(dbapi_connection, connection_record):
+        def listener_sqlite(dbapi_connection, connection_record):
+
+            # Enable case sensitive like / contains
+            dbapi_connection.execute("pragma case_sensitive_like=ON")
+
+            # Register exponent function
             dbapi_connection.create_function("pow", 2, lambda x, y: x ** y)
 
         # Create tables
