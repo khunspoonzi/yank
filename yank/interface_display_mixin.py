@@ -478,4 +478,34 @@ class InterfaceDisplayMixin:
         # Print renderable list view and return
         console.print(renderable, justify="center")
 
-        input("temp")
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ INTERACTIVE                                                                │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # Return if not interactive
+        if not interactive:
+            return
+
+        # Initialize while loop
+        while True:
+
+            # Get command
+            command = console.input(_c.INPUT_TAG)
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ BASIC COMMANDS                                                         │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Handle case of quit
+            if command in ["q", "quit"]:
+                break
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ RE-RENDER                                                              │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Clear console
+            console.clear()
+
+            # Print renderable list view and return
+            console.print(renderable, justify="center")

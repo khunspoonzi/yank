@@ -373,8 +373,13 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             # Get detail display fields as first ten fields
             detail_display_fields = list(self.field_map.keys())[:10]
 
+            # Remove URL and yanked at from fields
+            detail_display_fields = [
+                f for f in detail_display_fields if f not in (_c.URL, _c.YANKED_AT)
+            ]
+
             # Iterate over detail display fields
-            for i, field in enumerate(detail_display_fields):
+            for i, field in enumerate(detail_display_fields, 1):
 
                 # Get display
                 display = self.field_map[field][_c.DISPLAY]
@@ -385,14 +390,29 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
                 # Add to display map
                 self.detail_display_map[display] = field
 
-                # Check if index is divisible by five or is last
-                if i and (i % 5 == 0 or i == len(detail_display_fields) - 1):
+                # Check if index is divisible by two or is last
+                if i % 2 == 0 or i == len(detail_display_fields):
 
                     # Add columns to new display detail by
                     _display_detail_by.append(cols)
 
                     # Reset columns
                     cols = {}
+
+            # Get URL display
+            url_display = self.field_map[_c.URL][_c.DISPLAY]
+
+            # Get yanked at display
+            yanked_at_display = self.field_map[_c.YANKED_AT][_c.DISPLAY]
+
+            # Add to display map
+            self.detail_display_map[url_display] = _c.URL
+            self.detail_display_map[yanked_at_display] = _c.YANKED_AT
+
+            # Add URL and yanked at as a pair at the end
+            _display_detail_by.append(
+                {_c.URL: url_display, _c.YANKED_AT: yanked_at_display}
+            )
 
         # Redefine display detail by
         self.display_detail_by = _display_detail_by
