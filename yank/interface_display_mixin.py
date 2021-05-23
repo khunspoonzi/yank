@@ -91,8 +91,35 @@ class InterfaceDisplayMixin:
                 # Add page number to title
                 renderable.title += f"\nPage {int(offset / limit) + 1} of {page_count}"
 
+            # Initialize caption
+            caption = "c\[ommands]: Show available commands"  # noqa
+
+            # Initialize sub-caption
+            sub_caption = ""
+
+            # Check if sort by is not null
+            if sort_by:
+
+                # Add sort sub-caption
+                sub_caption += f"sort: {','.join(sort_by)}\n"
+
+            # Check if filter by is not null
+            if filter_by:
+
+                # Get filter strings
+                filter_strings = [f"{f}={v}" for f, v in filter_by.items()]
+
+                # Add filter sub-caption
+                sub_caption += f"filter: {','.join(filter_strings)}\n"
+
+            # Check if sub-caption
+            if sub_caption:
+
+                # Combine caption and sub-caption
+                caption = sub_caption + "\n" + caption
+
             # Set caption
-            renderable.caption = "c\[ommands]: Show available commands"  # noqa
+            renderable.caption = caption.strip("\n")
 
         # Get display map
         display_map = self.list_display_map
@@ -201,7 +228,12 @@ class InterfaceDisplayMixin:
 
             # Otherwise handle case of reset
             if command in ["r", "reset"]:
-                pass
+
+                # Reset sort fields
+                sort_by = None
+
+                # Reset filters
+                filter_by = None
 
             # Otherwise handle case of quit
             elif command in ["q", "quit"]:
