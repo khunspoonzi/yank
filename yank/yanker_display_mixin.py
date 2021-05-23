@@ -121,8 +121,8 @@ class YankerDisplayMixin:
                 display_commands(
                     "Available Commands",
                     console,
-                    ("r[ows]", "<#>", "Show table rows", "r0"),
-                    ("c[ols]", "<#>", "Show table columns", "c0"),
+                    ("r[ows]", "<#>", "Show table rows", "r 0"),
+                    ("c[ols]", "<#>", "Show table columns", "c 0"),
                 )
 
             # Get command and index
