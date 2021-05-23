@@ -5,12 +5,14 @@
 import math
 import re
 
+from sqlalchemy.orm import column_property
+
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ RICH IMPORTS                                                                       │
 # └────────────────────────────────────────────────────────────────────────────────────┘
 
 from rich.columns import Columns
-from rich.console import Console, render_group
+from rich.console import Console, RenderGroup
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
@@ -415,7 +417,6 @@ class InterfaceDisplayMixin:
     # │ GET DETAIL RENDERABLE                                                          │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    @render_group()
     def get_detail_renderable(self, item_id):
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
@@ -425,14 +426,14 @@ class InterfaceDisplayMixin:
         # Get item by ID
         item = self.get(id=int(item_id))
 
-        # Yield heading
-        # yield Panel(Text("BACKTEST", style="bold", justify="center"))
-
         # Define panel kwargs
         panel_kwargs = {"title_align": "right"}
 
         # Get display detail by
         display_detail_by = self.display_detail_by
+
+        # Initialize columns
+        columns = []
 
         # Iterate over rows in display detail by
         for row in display_detail_by:
@@ -452,8 +453,17 @@ class InterfaceDisplayMixin:
                 # Add Panel to columns
                 cols.append(Panel(value, title=display, **panel_kwargs))
 
-            # Yield row of columns
-            yield Columns(cols, expand=True)
+            # Append row of columns
+            columns.append(Columns(cols, expand=True))
+
+        # Create renderable
+        renderable = RenderGroup(*columns)
+
+        # Pad renderable
+        renderable = Padding(renderable, (1, 1))
+
+        # Return renderable
+        return renderable
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ DISPLAY DETAIL                                                                 │
