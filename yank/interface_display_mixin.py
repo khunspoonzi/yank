@@ -71,73 +71,17 @@ class InterfaceDisplayMixin:
     ):
         """ Returns a Rich table renderable for the interface list view """
 
-        # Get row count
-        row_count = self.count()  # TODO: Fix this in case of filter
+        # Define max limit
+        limit_max = 1000
 
-        # Initialize Rich Table as renderable
-        renderable = Table(
-            title=f"{self.name}: {self.db_table_name} ({row_count} rows)"
-        )
+        # Initialize limie
+        limit = limit or limit_max
 
-        # Check if interactive
-        if interactive:
-
-            # Check if limit is defined
-            if limit:
-
-                # Get page count
-                page_count = math.ceil(row_count / limit)
-
-                # Add page number to title
-                renderable.title += f"\nPage {int(offset / limit) + 1} of {page_count}"
-
-            # Initialize caption
-            caption = "c\[ommands]: Show available commands"  # noqa
-
-            # Initialize sub-caption
-            sub_caption = ""
-
-            # Check if sort by is not null
-            if sort_by:
-
-                # Add sort sub-caption
-                sub_caption += f"sort: {','.join(sort_by)}\n"
-
-            # Check if filter by is not null
-            if filter_by:
-
-                # Get filter strings
-                filter_strings = [f"{f}={v}" for f, v in filter_by.items()]
-
-                # Add filter sub-caption
-                sub_caption += f"filter: {','.join(filter_strings)}\n"
-
-            # Check if sub-caption
-            if sub_caption:
-
-                # Combine caption and sub-caption
-                caption = sub_caption + "\n" + caption
-
-            # Set caption
-            renderable.caption = caption.strip("\n")
+        # Get limit where max is 1000
+        limit = min(limit, limit_max)
 
         # Get display map
         display_map = self.list_display_map
-
-        # Get display fields
-        display_fields = self.display_list_by
-
-        # Initialize fields
-        fields = []
-
-        # Iterate over display fields
-        for field, display in display_fields.items():
-
-            # Create column
-            renderable.add_column(display)
-
-            # Add field to fields
-            fields.append(field)
 
         # Get items
         items = self.db_session.query(self.Item)
@@ -154,17 +98,78 @@ class InterfaceDisplayMixin:
             # Apply sort fields
             items = self.sort(*sort_by, queryset=items, display_map=display_map)
 
-        # Check if limit is not null
-        if limit:
+        # Get row count
+        row_count = items.count()
 
-            # Limit items
-            items = items.offset(offset).limit(limit)
+        # Get page count
+        page_count = math.ceil(row_count / limit)
+
+        # Define title
+        title = (
+            f"{self.name}: {self.db_table_name}\n"
+            f"Page {int(offset / limit) + 1} of {page_count} "
+            f"({row_count} {self.inflector.plural('row', row_count)})"
+        )
+
+        # Limit items
+        items = items.offset(offset).limit(limit)
+
+        # Initialize Rich Table as renderable
+        renderable = Table(title=title)
+
+        # Get display fields
+        display_fields = self.display_list_by
+
+        # Initialize fields
+        fields = []
+
+        # Iterate over display fields
+        for field, display in display_fields.items():
+
+            # Create column
+            renderable.add_column(display)
+
+            # Add field to fields
+            fields.append(field)
 
         # Iterate over items
         for item in items:
 
             # Add row
             renderable.add_row(*[str(getattr(item, field)) for field in fields])
+
+        # Check if interactive
+        if interactive:
+
+            # Initialize caption
+            caption = "c\[ommands]: Show available commands"  # noqa
+
+            # Initialize sub-caption
+            sub_caption = ""
+
+            # Check if sort by is not null
+            if sort_by:
+
+                # Add sort sub-caption
+                sub_caption += f"sort {','.join(sort_by)}\n"
+
+            # Check if filter by is not null
+            if filter_by:
+
+                # Get filter strings
+                filter_strings = [f"{f}={v}" for f, v in filter_by.items()]
+
+                # Add filter sub-caption
+                sub_caption += f"filter {','.join(filter_strings)}\n"
+
+            # Check if sub-caption
+            if sub_caption:
+
+                # Combine caption and sub-caption
+                caption = sub_caption + "\n" + caption
+
+            # Set caption
+            renderable.caption = caption.strip("\n")
 
         # Pad renderable
         renderable = Padding(renderable, (1, 1))

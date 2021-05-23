@@ -427,7 +427,9 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
             db_table_name = "item" if db_table_name == "yank" else db_table_name
 
             # Initialize an interface
-            interface = Interface(DBBase, db_table_name=db_table_name, **kwargs)
+            interface = Interface(
+                DBBase, db_table_name=db_table_name, inflector=inflector, **kwargs
+            )
 
             # Define wrapper
             def wrapper(instance, target, *args, **kwargs):

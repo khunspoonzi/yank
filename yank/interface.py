@@ -80,7 +80,7 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def __init__(self, DBBase, db_table_name, **kwargs):
+    def __init__(self, DBBase, db_table_name, inflector, **kwargs):
         """ Init Method """
 
         # Get common constants
@@ -92,6 +92,9 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
         # Set table name
         self.db_table_name = db_table_name
+
+        # Initialize inflector
+        self.inflector = inflector
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ CUSTOM ATTRIBUTES                                                          │
