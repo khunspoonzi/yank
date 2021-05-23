@@ -221,6 +221,15 @@ class InterfaceDisplayMixin:
         if not interactive:
             return
 
+        # Define sort commands
+        sort_commands = ("s", "sort")
+
+        # Define filter commands
+        filter_commands = ("f", "filter")
+
+        # Define reset commands
+        reset_commands = ("r", "reset")
+
         # Initialize while loop
         while True:
 
@@ -232,7 +241,7 @@ class InterfaceDisplayMixin:
             # └────────────────────────────────────────────────────────────────────────┘
 
             # Otherwise handle case of reset
-            if command in ["r", "reset"]:
+            if command in reset_commands:
 
                 # Reset sort fields
                 sort_by = None
@@ -267,7 +276,12 @@ class InterfaceDisplayMixin:
                         "f name=Bob,age=24",
                     ),
                     ("d[etail]", "<id>", "Display a row in detail view", "d 5"),
-                    ("r[eset]", "", "Reset sort and filter parameters", "r"),
+                    (
+                        "r[eset]",
+                        "<command>[,<command>] = sort,filter",
+                        "Reset sort and / or filter parameters",
+                        "r sort",
+                    ),
                 )
 
             # ┌────────────────────────────────────────────────────────────────────────┐
@@ -335,7 +349,7 @@ class InterfaceDisplayMixin:
                 # └────────────────────────────────────────────────────────────────────┘
 
                 # Otherwise handle case of sort
-                elif command in ["s", "sort"]:
+                elif command in sort_commands:
 
                     # Set sort by argument
                     sort_by = [f.strip() for f in args.split(",")]
@@ -354,7 +368,7 @@ class InterfaceDisplayMixin:
                 # └────────────────────────────────────────────────────────────────────┘
 
                 # Otherwise handle case of filter
-                elif command in ["f", "filter"]:
+                elif command in filter_commands:
 
                     # Set filter by argument
                     filter_by = [f.strip() for f in args.split(",")]
@@ -391,6 +405,28 @@ class InterfaceDisplayMixin:
 
                     # Display interface detail view
                     self.display_detail(item_id=item_id, interactive=interactive)
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ RESET                                                              │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Otherwise handle case of reset
+                elif command in reset_commands:
+
+                    # Iterate over split args
+                    for arg in (args or "").split(","):
+
+                        # Handle case of sort
+                        if arg in sort_commands:
+
+                            # Set sort by to None
+                            sort_by = None
+
+                        # Otherwise handle case of filter
+                        elif arg in filter_commands:
+
+                            # Set filter by to None
+                            filter_by = None
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ RE-RENDER                                                              │
