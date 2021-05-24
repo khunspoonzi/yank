@@ -279,20 +279,20 @@ class InterfaceDisplayMixin:
                     ("l[imit]", "<int>", "Set max number of rows per page", "l 10"),
                     (
                         "s[ort]",
-                        "<field>[,<field>]",
+                        f"<field>[ {OPERATOR_AND} <field>]",
                         "Sort rows by field(s)",
-                        "s name,-age",
+                        "s name && -age",
                     ),
                     (
                         "f[ilter]",
-                        "<field>=<value>[,<field>=<value>]",
+                        f"<field>=<value>[ {OPERATOR_AND} <field>=<value>]",
                         "Filter rows by field(s)",
-                        "f name=Bob,age=24",
+                        "f name = Bob && age = 24",
                     ),
                     ("d[etail]", "<id>", "Display a row in detail view", "d 5"),
                     (
                         "r[eset]",
-                        "<command>[,<command>] = sort,filter",
+                        f"<command>[ {OPERATOR_AND} <command>] = sort && filter",
                         "Reset sort and / or filter parameters",
                         "r sort",
                     ),
@@ -418,7 +418,10 @@ class InterfaceDisplayMixin:
                 elif command in reset_commands:
 
                     # Iterate over split args
-                    for arg in (args or "").split(","):
+                    for arg in (args or "").split(OPERATOR_AND):
+
+                        # Strip arg
+                        arg = arg.strip()
 
                         # Handle case of sort
                         if arg in sort_commands:
