@@ -426,14 +426,12 @@ The above script will initialize an instance of the yanker class defined previou
 
 The following is a list of pending features presented in order of priority:
 
-- [...]
 - Writing Files
 - History Tracking
 - Item Relationships
 - Complex Boolean Logic
 - Database Migrations
 - Remote Databases
-- [...]
 
 ## FAQ
 
