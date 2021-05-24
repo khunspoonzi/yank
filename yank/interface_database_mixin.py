@@ -128,10 +128,36 @@ class InterfaceDatabaseMixin:
     # │ FILTER                                                                         │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def filter(self, queryset=None, display_map=None, **kwargs):
+    def filter(self, queryset=None, display_map=None, tuples=None, **kwargs):
         """
         Returns a filtered queryset of items in the database by the provided kwargs
         """
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ TUPLES                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
+
+        # NOTE: A list of tuples can be used instead of kwargs for more complex logic
+        # e.g. author__contains=a && author__contains=b
+        # Using kwargs, there can only be one author__contains argument as it is a dict
+
+        # Check if tuples
+        if tuples:
+
+            # Iterate over tuples
+            for field, value in tuples:
+
+                # Get queryset
+                queryset = self.filter(
+                    queryset=queryset, display_map=display_map, **{field: value}
+                )
+
+            # Return queryset
+            return queryset
+
+        # ┌────────────────────────────────────────────────────────────────────────────┐
+        # │ KWARGS                                                                     │
+        # └────────────────────────────────────────────────────────────────────────────┘
 
         # Get Item
         Item = self.Item
@@ -252,6 +278,15 @@ class InterfaceDatabaseMixin:
 
                 # Filter with regexp query
                 queryset = queryset.filter(field_obj.op("regexp")(value))
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ IN                                                                     │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Otherwise handle case of in
+            elif modifier in (_c.IN, _c.IIN):
+
+                pass
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ FILTER BY                                                              │

@@ -23,6 +23,16 @@ import yank.constants as _c
 
 from yank.tools import display_commands
 
+# ┌────────────────────────────────────────────────────────────────────────────────────┐
+# │ CONSTANTS                                                                          │
+# └────────────────────────────────────────────────────────────────────────────────────┘
+
+# Define AND operator
+OPERATOR_AND = "&&"
+
+# Define OR operator
+OPERATOR_OR = "||"
+
 
 # ┌────────────────────────────────────────────────────────────────────────────────────┐
 # │ INTERFACE DISPLAY MIXIN                                                            │
@@ -90,7 +100,9 @@ class InterfaceDisplayMixin:
         if filter_by:
 
             # Apply filters
-            items = self.filter(**filter_by, queryset=items, display_map=display_map)
+            items = self.filter(
+                queryset=items, display_map=display_map, tuples=filter_by
+            )
 
         # Check if sort by is not null
         if sort_by:
@@ -151,16 +163,18 @@ class InterfaceDisplayMixin:
             if sort_by:
 
                 # Add sort sub-caption
-                sub_caption += f"sort {','.join(sort_by)}\n"
+                sub_caption += f"sort {(' ' + OPERATOR_AND + ' ').join(sort_by)}\n"
 
             # Check if filter by is not null
             if filter_by:
 
                 # Get filter strings
-                filter_strings = [f"{f}={v}" for f, v in filter_by.items()]
+                filter_strings = [f"{f}={v}" for f, v in filter_by]
 
                 # Add filter sub-caption
-                sub_caption += f"filter {','.join(filter_strings)}\n"
+                sub_caption += (
+                    f"filter {(' ' + OPERATOR_AND + ' ').join(filter_strings)}\n"
+                )
 
             # Check if sub-caption
             if sub_caption:
@@ -352,7 +366,7 @@ class InterfaceDisplayMixin:
                 elif command in sort_commands:
 
                     # Set sort by argument
-                    sort_by = [f.strip() for f in args.split(",")]
+                    sort_by = [f.strip() for f in args.split(OPERATOR_AND)]
 
                     # Remove null items
                     sort_by = [s for s in sort_by if s]
@@ -371,24 +385,20 @@ class InterfaceDisplayMixin:
                 elif command in filter_commands:
 
                     # Set filter by argument
-                    filter_by = [f.strip() for f in args.split(",")]
+                    filter_by = [f.strip() for f in args.split(OPERATOR_AND)]
 
-                    # Convert filter by to kwargs
+                    # Convert filter by to list of tuples
                     filter_by = (
-                        {
-                            f: v
-                            for f, v in [
-                                arg.split("=") for arg in filter_by if "=" in arg
-                            ]
-                        }
+                        [[f.strip() for f in arg.split("=")] for arg in filter_by]
                         if filter_by
                         else None
                     )
 
                     # Cast values
-                    filter_by = self.cast_fields(
-                        filter_by, display_map=self.list_display_map
-                    )
+                    filter_by = [
+                        (field, self.cast_field(field.split("__")[0], value))
+                        for field, value in filter_by
+                    ]
 
                     # Reset offset to zero
                     offset = 0
