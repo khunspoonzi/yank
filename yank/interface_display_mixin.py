@@ -326,7 +326,7 @@ class InterfaceDisplayMixin:
                                     "<field>__contains = <substring>",
                                     (
                                         "presence of a "
-                                        "substring in a string-based field value"
+                                        "substring in a string-based field"
                                     ),
                                     "f name__contains = Bo",
                                 ),
@@ -336,7 +336,7 @@ class InterfaceDisplayMixin:
                                     (
                                         "presence of a "
                                         "case-insensitive substring in a string-based "
-                                        "field value"
+                                        "field"
                                     ),
                                     "f name__icontains = bo",
                                 ),
@@ -345,8 +345,8 @@ class InterfaceDisplayMixin:
                                     "<field>__startswith = <substring>",
                                     (
                                         "presence of a "
-                                        "substring at the beginning of a string-based "
-                                        "field value"
+                                        "substring at the start of a string-based "
+                                        "field"
                                     ),
                                     "f name__startswith = Bo",
                                 ),
@@ -355,8 +355,8 @@ class InterfaceDisplayMixin:
                                     "<field>__istartswith = <substring>",
                                     (
                                         "presence of a "
-                                        "case-insensitive substring at the beginning "
-                                        "of a string-based field value"
+                                        "case-insensitive substring at the start "
+                                        "of a string-based field"
                                     ),
                                     "f name__istartswith = bo",
                                 ),
@@ -366,7 +366,7 @@ class InterfaceDisplayMixin:
                                     (
                                         "presence of a "
                                         "substring at the end of a string-based "
-                                        "field value"
+                                        "field"
                                     ),
                                     "f name__endswith = ob",
                                 ),
@@ -376,7 +376,7 @@ class InterfaceDisplayMixin:
                                     (
                                         "presence of a "
                                         "case-insensitive substring at the end "
-                                        "of a string-based field value"
+                                        "of a string-based field"
                                     ),
                                     "f name__iendswith = OB",
                                 ),
@@ -424,8 +424,8 @@ class InterfaceDisplayMixin:
                                     "~",
                                     "~ <field>[__modifier] = <value>",
                                     (
-                                        "Negates the current filter to exclude rather "
-                                        "than include the selected rows"
+                                        "Negates the filter to exclude the selected "
+                                        "rows"
                                     ),
                                     "f ~ name = Bob",
                                 ),
@@ -436,8 +436,8 @@ class InterfaceDisplayMixin:
                                         "<field>[__modifier] = <value>"
                                     ),
                                     (
-                                        "Chains two or more filters that must all be "
-                                        "satisfied"
+                                        "Selects rows that satisfy all of the chained "
+                                        "filters"
                                     ),
                                     "f name = Bob && age = 24",
                                 ),
