@@ -285,7 +285,7 @@ class InterfaceDisplayMixin:
                     ),
                     (
                         "f[ilter]",
-                        f"<field>=<value>[ {OPERATOR_AND} <field>=<value>]",
+                        f"<field> = <value>[ {OPERATOR_AND} <field> = <value>]",
                         "Filter rows by field(s)",
                         "f name = Bob && age = 24",
                     ),
@@ -296,6 +296,154 @@ class InterfaceDisplayMixin:
                         "Reset sort and / or filter parameters",
                         "r sort",
                     ),
+                    aux_tables=[
+                        (
+                            "Filter Modifiers",
+                            (
+                                "modifier",
+                                "usage",
+                                "filters rows based on the...",
+                                "example",
+                            ),
+                            (
+                                (
+                                    "exact",
+                                    "<field> = <value>",
+                                    "exact value of a field",
+                                    "f name = Bob",
+                                ),
+                                (
+                                    "iexact",
+                                    "<field>__iexact = <value>",
+                                    (
+                                        "exact "
+                                        "case-insensitive value of a string-based field"
+                                    ),
+                                    "f name = bob",
+                                ),
+                                (
+                                    "contains",
+                                    "<field>__contains = <substring>",
+                                    (
+                                        "presence of a "
+                                        "substring in a string-based field value"
+                                    ),
+                                    "f name__contains = Bo",
+                                ),
+                                (
+                                    "icontains",
+                                    "<field>__icontains = <substring>",
+                                    (
+                                        "presence of a "
+                                        "case-insensitive substring in a string-based "
+                                        "field value"
+                                    ),
+                                    "f name__icontains = bo",
+                                ),
+                                (
+                                    "startswith",
+                                    "<field>__startswith = <substring>",
+                                    (
+                                        "presence of a "
+                                        "substring at the beginning of a string-based "
+                                        "field value"
+                                    ),
+                                    "f name__startswith = Bo",
+                                ),
+                                (
+                                    "istartswith",
+                                    "<field>__istartswith = <substring>",
+                                    (
+                                        "presence of a "
+                                        "case-insensitive substring at the beginning "
+                                        "of a string-based field value"
+                                    ),
+                                    "f name__istartswith = bo",
+                                ),
+                                (
+                                    "endswith",
+                                    "<field>__endswith = <substring>",
+                                    (
+                                        "presence of a "
+                                        "substring at the end of a string-based "
+                                        "field value"
+                                    ),
+                                    "f name__endswith = ob",
+                                ),
+                                (
+                                    "iendswith",
+                                    "<field>__iendswith = <substring>",
+                                    (
+                                        "presence of a "
+                                        "case-insensitive substring at the end "
+                                        "of a string-based field value"
+                                    ),
+                                    "f name__iendswith = OB",
+                                ),
+                                (
+                                    "regex",
+                                    "<field>__regex = <pattern>",
+                                    (
+                                        "positive match of a "
+                                        "regex pattern against the value of a "
+                                        "string-based field"
+                                    ),
+                                    "f name__regex = ^[A-Z]\[a-z]{2}$",  # noqa
+                                ),
+                                (
+                                    "in",
+                                    "<field>__in = <value>, <value>",
+                                    (
+                                        "exact value of any one of the "
+                                        "options in a comma-separated list "
+                                    ),
+                                    "f name__in = Bob, Tom",
+                                ),
+                                (
+                                    "iin",
+                                    "<field>__iin = <value>, <value>",
+                                    (
+                                        "exact case-insensitive value of a "
+                                        "string-based field against any one of the "
+                                        "options in a comma-separated list "
+                                    ),
+                                    "f name__iin = bob, tom",
+                                ),
+                            ),
+                        ),
+                        (
+                            "Filter Operators",
+                            (
+                                "operator",
+                                "usage",
+                                "description",
+                                "example",
+                            ),
+                            (
+                                (
+                                    "~",
+                                    "~ <field>[__modifier] = <value>",
+                                    (
+                                        "Negates the current filter to exclude rather "
+                                        "than include the selected rows"
+                                    ),
+                                    "f ~ name = Bob",
+                                ),
+                                (
+                                    "&&",
+                                    (
+                                        "<field>[__modifier] = <value> && "
+                                        "<field>[__modifier] = <value>"
+                                    ),
+                                    (
+                                        "Chains two or more filters that must all be "
+                                        "satisfied"
+                                    ),
+                                    "f name = Bob && age = 24",
+                                ),
+                            ),
+                        ),
+                    ],
                 )
 
             # ┌────────────────────────────────────────────────────────────────────────┐

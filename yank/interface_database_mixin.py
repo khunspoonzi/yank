@@ -193,7 +193,7 @@ class InterfaceDatabaseMixin:
                 should_negate = True
 
                 # Replace tilde
-                field = field.replace("~", "", 1)
+                field = field.replace("~", "", 1).strip()
 
             # Split field by modifier
             field_split = field.split("__")
