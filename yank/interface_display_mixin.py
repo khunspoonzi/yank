@@ -169,7 +169,7 @@ class InterfaceDisplayMixin:
             if filter_by:
 
                 # Get filter strings
-                filter_strings = [f"{f}={v}" for f, v in filter_by]
+                filter_strings = [f"{f} = {v}" for f, v in filter_by]
 
                 # Add filter sub-caption
                 sub_caption += (

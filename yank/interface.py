@@ -113,8 +113,14 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # │ FIELD MAP                                                                  │
         # └────────────────────────────────────────────────────────────────────────────┘
 
-        # Initialize field map from kwargs
-        field_map = {k: v for k, v in kwargs.items() if k not in attributes}
+        # Initialize field map
+        field_map = {_c.ID: {_c.CAST: int, _c.DISPLAY: "ID"}}
+
+        # Add kwargs to field map
+        field_map = {
+            **field_map,
+            **{k: v for k, v in kwargs.items() if k not in attributes},
+        }
 
         # Add yanked at and URL to field map
         field_map[self.URL] = {CAST: str, DISPLAY: "URL"}
@@ -183,6 +189,10 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
             # Iterate over field map
             for field, info in self.field_map.items():
+
+                # Continue if field is ID (created manually)
+                if field == _c.ID:
+                    continue
 
                 # Get column type
                 ColType = self.TYPE_MAP[info[CAST]]
@@ -256,8 +266,6 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             # Set ID as primary key
             id = Column(Integer, primary_key=True)
 
-            # NOTE: URL and yanked at are set above in the field map
-
         # Set Item class on interface object
         self.Item = Item
 
@@ -266,7 +274,7 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # └────────────────────────────────────────────────────────────────────────────┘
 
         # Initialize list display map
-        self.list_display_map = {_c.ID: _c.ID}
+        self.list_display_map = {self.field_map[_c.ID][_c.DISPLAY]: _c.ID}
 
         # Check if display list by is defined
         if self.display_list_by:
@@ -499,11 +507,8 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
             # Assert value is datetime
             assert value_type is datetime, f"{field} is not a valid datetime"
 
-        # Handle normal case
-        else:
-
-            # Cast value to appropriate type
-            value = to_type(value)
+        # Cast value to appropriate type
+        value = to_type(value)
 
         # Return value
         return value

@@ -232,8 +232,11 @@ class InterfaceDatabaseMixin:
             # │ CAST VALUE                                                             │
             # └────────────────────────────────────────────────────────────────────────┘
 
-            # Cast value
-            value = self.cast_field(field, value)
+            # Check if modifier is not a multiple value operator
+            if modifier not in (_c.IN, _c.IIN):
+
+                # Cast value
+                value = self.cast_field(field, value)
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ SUBSTRING                                                              │
