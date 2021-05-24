@@ -183,6 +183,18 @@ class InterfaceDatabaseMixin:
         # Iterate over kwargs
         for field, value in kwargs.items():
 
+            # Initialize should negate
+            should_negate = False
+
+            # Check if filed starts with tilde
+            if field.startswith("~"):
+
+                # Set should negate to True
+                should_negate = True
+
+                # Replace tilde
+                field = field.replace("~", "", 1)
+
             # Split field by modifier
             field_split = field.split("__")
 
@@ -262,13 +274,6 @@ class InterfaceDatabaseMixin:
                     # Set query using ilike
                     query = field_obj.ilike(arg_string)
 
-                # ┌────────────────────────────────────────────────────────────────────┐
-                # │ FILTER                                                             │
-                # └────────────────────────────────────────────────────────────────────┘
-
-                # Filter queryset
-                queryset = queryset.filter(query)
-
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ REGEX                                                                  │
             # └────────────────────────────────────────────────────────────────────────┘
@@ -276,8 +281,8 @@ class InterfaceDatabaseMixin:
             # Otherwise handle case of regex
             elif modifier == _c.REGEX:
 
-                # Filter with regexp query
-                queryset = queryset.filter(field_obj.op("regexp")(value))
+                # Define query
+                query = field_obj.op("regexp")(value)
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ IN                                                                     │
@@ -289,14 +294,34 @@ class InterfaceDatabaseMixin:
                 pass
 
             # ┌────────────────────────────────────────────────────────────────────────┐
-            # │ FILTER BY                                                              │
+            # │ EQUALS                                                                 │
             # └────────────────────────────────────────────────────────────────────────┘
 
-            # Otherwise handle filter by case
+            # Otherwise handle equals case
             else:
 
-                # Filter queryset by filter by kwargs
-                queryset = queryset.filter_by(**{field: value})
+                # Check if modifier is iexact
+                # TODO: Handle EXACT AND IEXACT
+
+                # Define query
+                query = field_obj == value
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ NEGATE                                                                 │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Check if should negate
+            if should_negate:
+
+                # Negagte query
+                query = ~query
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ FILTER                                                                 │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Filter with query
+            queryset = queryset.filter(query)
 
         # Return filtered queryset
         return queryset
