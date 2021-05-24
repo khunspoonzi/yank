@@ -216,6 +216,12 @@ class InterfaceDatabaseMixin:
             if field not in field_map:
                 continue
 
+            # Get field cast
+            field_cast = field_map[field][_c.CAST]
+
+            # Define field is string boolean
+            field_is_str = field_cast is str
+
             # Add field object to field cache
             field_cache[field] = field_cache.get(field, getattr(Item, field))
 
@@ -234,13 +240,17 @@ class InterfaceDatabaseMixin:
             # └────────────────────────────────────────────────────────────────────────┘
 
             # Handle case of substring
-            if modifier in (
-                _c.CONTAINS,
-                _c.ICONTAINS,
-                _c.STARTSWITH,
-                _c.ISTARTSWITH,
-                _c.ENDSWITH,
-                _c.IENDSWITH,
+            if (
+                modifier
+                in (
+                    _c.CONTAINS,
+                    _c.ICONTAINS,
+                    _c.STARTSWITH,
+                    _c.ISTARTSWITH,
+                    _c.ENDSWITH,
+                    _c.IENDSWITH,
+                )
+                and field_is_str
             ):
 
                 # ┌────────────────────────────────────────────────────────────────────┐
@@ -286,7 +296,7 @@ class InterfaceDatabaseMixin:
             # └────────────────────────────────────────────────────────────────────────┘
 
             # Otherwise handle case of regex
-            elif modifier == _c.REGEX:
+            elif modifier == _c.REGEX and field_is_str:
 
                 # Define query
                 query = field_obj.op("regexp")(value)
@@ -298,17 +308,30 @@ class InterfaceDatabaseMixin:
             # Otherwise handle case of in
             elif modifier in (_c.IN, _c.IIN):
 
-                pass
+                # Convert and cast to a list of values
+                values = [self.cast_field(field, i.strip()) for i in value.split(",")]
+
+                # Handle case of iin
+                if modifier == _c.IIN and field_is_str:
+
+                    # Define query
+                    query = func.lower(field_obj).in_([i.lower() for i in values])
+
+                # Otherwise handle normal case
+                else:
+
+                    # Define query
+                    query = field_obj.in_(values)
 
             # ┌────────────────────────────────────────────────────────────────────────┐
-            # │ EQUALS                                                                 │
+            # │ EXACT                                                                  │
             # └────────────────────────────────────────────────────────────────────────┘
 
-            # Otherwise handle equals case
+            # Otherwise handle exact case
             else:
 
                 # Check if modifier is iexact
-                if modifier == _c.IEXACT:
+                if modifier == _c.IEXACT and field_is_str:
 
                     # Define query
                     query = func.lower(field_obj) == value.lower()
