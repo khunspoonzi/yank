@@ -279,9 +279,14 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
         # │ WRAP METHODS                                                               │
         # └────────────────────────────────────────────────────────────────────────────┘
 
+        # Get default browser and supported browsers
+        default_browser = default_browser or self.default_browser
+
         # Call wrap methods
         # This will determine whether the user has defined a driver callback method
-        has_driver_callback, has_solve_captcha_callback = self.wrap_methods()
+        has_driver_callback, has_solve_captcha_callback = self.wrap_methods(
+            default_browser=default_browser
+        )
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
         # │ BROWSER AND DRIVER                                                         │
@@ -297,9 +302,6 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
 
         # Check if driver is required
         if driver_is_required:
-
-            # Get default browser and supported browsers
-            default_browser = default_browser or self.default_browser
 
             # Get driver mode
             driver_mode = driver_mode if driver_mode is not None else self.driver_mode
@@ -453,7 +455,7 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
     # │ WRAP METHODS                                                                   │
     # └────────────────────────────────────────────────────────────────────────────────┘
 
-    def wrap_methods(self):
+    def wrap_methods(self, default_browser):
         """ Wraps user-defined methods in existing Yanker utility methods """
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
@@ -479,6 +481,9 @@ class Yanker(YankerDisplayMixin, YankerUtilMixin):
 
             # Check if interface is not null
             if interface:
+
+                # Set default browser
+                interface.default_browser
 
                 # Add instance session to interface
                 interface.db_session = self.db_session

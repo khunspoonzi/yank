@@ -19,6 +19,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 import yank.constants as _c
 
+from yank.browser import Browser
 from yank.interface_database_mixin import InterfaceDatabaseMixin
 from yank.interface_display_mixin import InterfaceDisplayMixin
 
@@ -76,6 +77,12 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
     # Initialize detail display map to None
     detail_display_map = None
 
+    # Initialize default browser
+    default_browser = Browser.CHROME
+
+    # Initialize cached browser
+    _browser = None
+
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ INIT METHOD                                                                    │
     # └────────────────────────────────────────────────────────────────────────────────┘
@@ -93,7 +100,7 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
         # Set table name
         self.db_table_name = db_table_name
 
-        # Initialize inflector
+        # Set inflector
         self.inflector = inflector
 
         # ┌────────────────────────────────────────────────────────────────────────────┐
@@ -424,6 +431,34 @@ class Interface(InterfaceDatabaseMixin, InterfaceDisplayMixin):
 
         # Redefine display detail by
         self.display_detail_by = _display_detail_by
+
+    # ┌────────────────────────────────────────────────────────────────────────────────┐
+    # │ BROWSER                                                                        │
+    # └────────────────────────────────────────────────────────────────────────────────┘
+
+    @property
+    def browser(self):
+        """ Returns a cached browser instance """
+
+        # Check if browser is cached
+        if self._browser:
+
+            # Return cached browser
+            return self._browser
+
+        # Initialize a new browser
+        browser = Browser(
+            self.default_browser,
+            driver_mode=Browser.NORMAL,
+            driver_headless=False,
+            driver_requests=False,
+        )
+
+        # Cache browser
+        self._browser = browser
+
+        # Return browser
+        return browser
 
     # ┌────────────────────────────────────────────────────────────────────────────────┐
     # │ CAST FIELDS                                                                    │

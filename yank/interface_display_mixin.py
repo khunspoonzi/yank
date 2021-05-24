@@ -77,7 +77,13 @@ class InterfaceDisplayMixin:
     # └────────────────────────────────────────────────────────────────────────────────┘
 
     def get_list_renderable(
-        self, interactive=False, limit=None, offset=0, sort_by=None, filter_by=None
+        self,
+        interactive=False,
+        limit=None,
+        offset=0,
+        sort_by=None,
+        filter_by=None,
+        highlight_id=None,
     ):
         """ Returns a Rich table renderable for the interface list view """
 
@@ -147,8 +153,22 @@ class InterfaceDisplayMixin:
         # Iterate over items
         for item in items:
 
+            # Initialize style
+            style = ""
+
+            # Get item ID
+            item_id = item.id
+
+            # Check if item is highlighted
+            if item_id == highlight_id:
+
+                # Set style
+                style = "white on blue"
+
             # Add row
-            renderable.add_row(*[str(getattr(item, field)) for field in fields])
+            renderable.add_row(
+                *[str(getattr(item, field)) for field in fields], style=style
+            )
 
         # Check if interactive
         if interactive:
@@ -235,6 +255,9 @@ class InterfaceDisplayMixin:
         if not interactive:
             return
 
+        # Initialize highlight ID
+        highlight_id = None
+
         # Define sort commands
         sort_commands = ("s", "sort")
 
@@ -243,6 +266,9 @@ class InterfaceDisplayMixin:
 
         # Define reset commands
         reset_commands = ("r", "reset")
+
+        # Cache previous item URL
+        item_url_previous = None
 
         # Initialize while loop
         while True:
@@ -289,13 +315,14 @@ class InterfaceDisplayMixin:
                         "Filter rows by field(s)",
                         "f name = Bob && age = 24",
                     ),
-                    ("d[etail]", "<id>", "Display a row in detail view", "d 5"),
                     (
                         "r[eset]",
                         f"<command>[ {OPERATOR_AND} <command>] = sort && filter",
                         "Reset sort and / or filter parameters",
                         "r sort",
                     ),
+                    ("d[etail]", "<id>", "Display a row in detail view", "d 5"),
+                    ("o[pen]", "<id>", "Opens a row's URL in a browser", "o 5"),
                     aux_tables=[
                         (
                             "Filter Modifiers",
@@ -546,19 +573,6 @@ class InterfaceDisplayMixin:
                     offset = 0
 
                 # ┌────────────────────────────────────────────────────────────────────┐
-                # │ DETAIL                                                             │
-                # └────────────────────────────────────────────────────────────────────┘
-
-                # Otherwise handle case of detail
-                elif command in ["d", "detail"]:
-
-                    # Get item ID
-                    item_id = int(args)
-
-                    # Display interface detail view
-                    self.display_detail(item_id=item_id, interactive=interactive)
-
-                # ┌────────────────────────────────────────────────────────────────────┐
                 # │ RESET                                                              │
                 # └────────────────────────────────────────────────────────────────────┘
 
@@ -583,6 +597,47 @@ class InterfaceDisplayMixin:
                             # Set filter by to None
                             filter_by = None
 
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ DETAIL                                                             │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Otherwise handle case of detail
+                elif command in ["d", "detail"]:
+
+                    # Get item ID
+                    item_id = int(args)
+
+                    # Display interface detail view
+                    self.display_detail(item_id=item_id, interactive=interactive)
+
+                # ┌────────────────────────────────────────────────────────────────────┐
+                # │ OPEN                                                               │
+                # └────────────────────────────────────────────────────────────────────┘
+
+                # Otherwise handle case of open
+                elif command in ["o", "open"]:
+
+                    # Get item ID
+                    item_id = int(args)
+
+                    # Set highlight ID
+                    highlight_id = item_id
+
+                    # Get item
+                    item = self.get(id=item_id)
+
+                    # Get item URL
+                    item_url = item.url
+
+                    # Check if item URL does not equal previous item URL
+                    if item_url != item_url_previous:
+
+                        # Get item URL with driver
+                        self.browser.driver.get(item_url)
+
+                    # Cache previous item URL
+                    item_url_previous = item_url
+
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ RE-RENDER                                                              │
             # └────────────────────────────────────────────────────────────────────────┘
@@ -594,6 +649,7 @@ class InterfaceDisplayMixin:
                 offset=offset,
                 sort_by=sort_by,
                 filter_by=filter_by,
+                highlight_id=highlight_id,
             )
 
             # Clear console
