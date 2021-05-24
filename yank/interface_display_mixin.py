@@ -394,12 +394,6 @@ class InterfaceDisplayMixin:
                         else None
                     )
 
-                    # Cast values
-                    filter_by = [
-                        (field, self.cast_field(field.split("__")[0], value))
-                        for field, value in filter_by
-                    ]
-
                     # Reset offset to zero
                     offset = 0
 

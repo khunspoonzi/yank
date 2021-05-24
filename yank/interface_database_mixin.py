@@ -223,6 +223,13 @@ class InterfaceDatabaseMixin:
             field_obj = field_cache[field]
 
             # ┌────────────────────────────────────────────────────────────────────────┐
+            # │ CAST VALUE                                                             │
+            # └────────────────────────────────────────────────────────────────────────┘
+
+            # Cast value
+            value = self.cast_field(field, value)
+
+            # ┌────────────────────────────────────────────────────────────────────────┐
             # │ SUBSTRING                                                              │
             # └────────────────────────────────────────────────────────────────────────┘
 
@@ -301,10 +308,16 @@ class InterfaceDatabaseMixin:
             else:
 
                 # Check if modifier is iexact
-                # TODO: Handle EXACT AND IEXACT
+                if modifier == _c.IEXACT:
 
-                # Define query
-                query = field_obj == value
+                    # Define query
+                    query = func.lower(field_obj) == value.lower()
+
+                # Otherwise handle standard exact case
+                else:
+
+                    # Define query
+                    query = field_obj == value
 
             # ┌────────────────────────────────────────────────────────────────────────┐
             # │ NEGATE                                                                 │
